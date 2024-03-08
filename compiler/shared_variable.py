@@ -1,7 +1,7 @@
 class SharedVariableContainer:
     # 生成模式有两种，
     # [0,层数]：测单层，用于单层仿真,生成单层指令、权重、对比结果
-    # [1,层数]：联测,用于侧板子,生成0-本层的连续指令、权重、对比结果
+    # [1,层数]：联测,用于侧板子,生成1-本层的连续指令、权重、对比结果
     generate_mode = [1, 143]
     # 这三个变量需要配合生成模式使用
     gen_ins = True  # 是否需要指令
@@ -9,8 +9,8 @@ class SharedVariableContainer:
     gen_result = False  # 是否需要生成对比结果,联测生成一次后建议关掉,太占用时间
 
     picture_address = 0  # 输入图片地址,一般记0
-    write_address = 6553600  # 特征图起始地址,一般接在输入图片之后
-    weight_address = 895483904  # 权重起始地址,一般接在所有特征图之后
+    write_address = 0x640000  # 特征图起始地址,一般接在输入图片之后
+    weight_address = 0x5C17000  # 权重起始地址,一般接在所有特征图之后
 
     img_size = 640  # 输入图片规定的尺寸
     parallel = 16  # 指示生成数据采用16进16出还是8进8出

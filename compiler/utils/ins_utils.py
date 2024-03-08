@@ -3,7 +3,7 @@ def instruction_parsing(ins_path):
     shape_op_type = {'1': 'maxpool',  '3': 'upsample', '7': 'mean',
                      '4': 'cat', '5': 'add', '8': 'mul', '6': 'leakyrelu'}
 
-    layer = 0
+    layer = 1
     instructions = open(ins_path).read().splitlines()
     print('------------------------------------------------------------'
           '------------------------------------------------------------')

@@ -1,4 +1,3 @@
-
 from compiler.conv_operator.base_conv import BaseConv
 from compiler.lib.ins_format import conv11para
 
@@ -17,6 +16,7 @@ class Conv11(BaseConv):
         option: [卷积类型,步长,padding,激活函数]
         shared: 共享变量集合
     '''
+
     def __init__(self, para, feature, option, shared):
         # 初始化父类
         super().__init__(para, feature, option, shared)
@@ -26,13 +26,16 @@ class Conv11(BaseConv):
     return:
         conv_reg2: 2寄存器数据
     '''
+
     def get_conv_reg2(self):
         parallel = self.shared.parallel
         weight_shape = self.weight_shape
         feature_shape = self.feature_shape
 
-        # 如果入通道数小于8或者特征图尺寸为1，则采用1*1的卷积方式(硬件方面的bug)
-        if weight_shape[1] < 8 * parallel or feature_shape[2] == 1:
+        # 如果入通道数小于8*parallel或者入通道数无法被8*parallel整除或者特征图尺寸为1，则采用1*1的卷积方式(硬件方面的bug)
+        if (weight_shape[1] < 8 * parallel
+                or weight_shape[1] % (8 * parallel) != 0
+                or feature_shape[2] == 1):
             conv_type = 2
         # 否则采用1*1*卷积方式
         else:
@@ -57,6 +60,7 @@ class Conv11(BaseConv):
     return:
         conv_reg3: 3寄存器数据
     '''
+
     def get_conv_reg3(self):
         data_size = None
         # 8入8出则单次数据量为64bit

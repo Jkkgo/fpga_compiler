@@ -88,16 +88,16 @@ class BaseShape:
     return:
         shape_reg0: 0寄存器数据
     '''
+
     def get_shape_reg0(self):
         feature_shape = self.l_feature_shape
         row_in = feature_shape[2]
         col_in = feature_shape[3]
-        l_channel_in = feature_shape[1]
         row_in = format(row_in, '011b')
         col_in = format(col_in, '011b')
-        l_channel_in = format(l_channel_in, '010b')
         # 该寄存器存储左入通道数、行数、列数
-        shape_reg0 = l_channel_in + col_in + row_in
+        shape_reg0 = col_in + row_in
+        shape_reg0 = shape_reg0.zfill(32)
         return shape_reg0
 
     '''

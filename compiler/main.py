@@ -81,7 +81,7 @@ def create_files():
         stem_0_r = stem_0.conv(feature_f)
         stem_0_act_r = stem_0.act(stem_0_r)
         Transit(para1='quant', para2='backbone.stem.0.conv',
-                feature=[feature_addchannel, stem_0_act_r],
+                feature=[feature_f, stem_0_act_r],
                 option=['Conv33', 1, 1, 1])
 
         stem_1_r = stem_1.conv(stem_0_act_r)
@@ -110,7 +110,7 @@ def create_files():
         dark2_1_cv1_act_r = dark2_1.cv1.act(dark2_1_cv1_r)  # r1
         Transit(para1='backbone.dark2.0.conv', para2='backbone.dark2.1.cv1.conv',
                 feature=[dark2_0_act_r, dark2_1_cv1_act_r],
-                option=['Conv33', 2, 1, 1])
+                option=['Conv11', 1, 0, 1])
         # 6
         dark2_1_cv2_r = dark2_1.cv2.conv(dark2_0_act_r)
         dark2_1_cv2_act_r = dark2_1.cv2.act(dark2_1_cv2_r)  # r2

@@ -33,11 +33,16 @@ def block(para1='', para2='', feature=None, option=None):
 
     # 再对卷积操作后的输出特征图进行concat操作
     for i in range(block_num - 1):
-        feature_data = torch.cat([output_block[2 * i], output_block[2 * i + 1]], dim=1)
-        output_block.append(feature_data)
-        Transit(para1=para1, para2=para1, para3=para1,
-                feature=[feature[0], feature_data, output_block[2 * i + 1]],
-                option=["Concat"])
+        if i != block_num - 2:
+            feature_data = torch.cat([output_block[2 * i], output_block[2 * i + 1]], dim=1)
+            output_block.append(feature_data)
+            Transit(para1=para1, para2=para1, para3=para1,
+                    feature=[output_block[2 * i], feature_data, output_block[2 * i + 1]],
+                    option=["Concat"])
+        else:
+            Transit(para1=para1, para2=para1, para3=para1,
+                    feature=[output_block[2 * i], feature[1], output_block[2 * i + 1]],
+                    option=["Concat"])
 
 
 '''

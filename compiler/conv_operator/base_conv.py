@@ -28,7 +28,10 @@ class BaseConv:
         self.feature = feature
         self.option = option
         self.shared = shared
-        self.feature_shape = add_feature_shape(feature[0], self.shared.parallel)
+        if shared.layer_count != 1:
+            self.feature_shape = add_feature_shape(feature[0], self.shared.parallel)
+        else:
+            self.feature_shape = feature[0].shape
 
         weight = np.load(self.para['local_weight_int'])
         weight = add_weight(weight, self.shared.parallel)
