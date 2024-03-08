@@ -18,7 +18,7 @@ instruction_parsing("./ins/auto_ins143.dat")
 # coe2bin("weight_block2.coe","weight_block2.bin")
 # coe2bin("weight_block3.coe","weight_block3.bin")
 
-
+# sdasd
 def bin2coe(binpath, coepath):
     target = open(coepath, "w")
     binfile = open(binpath, 'rb')
