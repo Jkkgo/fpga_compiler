@@ -1,0 +1,248 @@
+BiSeNetV1(
+  (cp): ContextPath(
+    (resnet): Resnet18(
+      (conv1): QuantizedConv2d(1, 64, kernel_size=(3, 3), stride=(2, 2), scale=0.5501788258552551, zero_point=58, padding=(1, 1))
+      (bn1): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+      (maxpool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (layer1): Sequential(
+        (0): BasicBlock(
+          (conv1): QuantizedConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), scale=0.5969594120979309, zero_point=56, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), scale=1.05457603931427, zero_point=50, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (qf): QFunctional(
+            scale=1.092427134513855, zero_point=48
+            (activation_post_process): Identity()
+          )
+        )
+        (1): BasicBlock(
+          (conv1): QuantizedConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), scale=1.2041977643966675, zero_point=62, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), scale=1.546559453010559, zero_point=69, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (qf): QFunctional(
+            scale=1.6301473379135132, zero_point=65
+            (activation_post_process): Identity()
+          )
+        )
+      )
+      (layer2): Sequential(
+        (0): BasicBlock(
+          (conv1): QuantizedConv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), scale=0.7615775465965271, zero_point=58, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), scale=0.7610011100769043, zero_point=53, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (downsample): Sequential(
+            (0): QuantizedConv2d(64, 128, kernel_size=(1, 1), stride=(2, 2), scale=0.44319525361061096, zero_point=62)
+            (1): Identity()
+          )
+          (qf): QFunctional(
+            scale=0.968909740447998, zero_point=50
+            (activation_post_process): Identity()
+          )
+        )
+        (1): BasicBlock(
+          (conv1): QuantizedConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), scale=0.4559918940067291, zero_point=82, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), scale=0.7714274525642395, zero_point=79, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (qf): QFunctional(
+            scale=0.9223812818527222, zero_point=59
+            (activation_post_process): Identity()
+          )
+        )
+      )
+      (layer3): Sequential(
+        (0): BasicBlock(
+          (conv1): QuantizedConv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), scale=0.5002037882804871, zero_point=66, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.5441652536392212, zero_point=64, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (downsample): Sequential(
+            (0): QuantizedConv2d(128, 256, kernel_size=(1, 1), stride=(2, 2), scale=0.2348162829875946, zero_point=73)
+            (1): Identity()
+          )
+          (qf): QFunctional(
+            scale=0.5879156589508057, zero_point=66
+            (activation_post_process): Identity()
+          )
+        )
+        (1): BasicBlock(
+          (conv1): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.35070735216140747, zero_point=80, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.42653971910476685, zero_point=69, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (qf): QFunctional(
+            scale=0.5683176517486572, zero_point=52
+            (activation_post_process): Identity()
+          )
+        )
+      )
+      (layer4): Sequential(
+        (0): BasicBlock(
+          (conv1): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), scale=1.0857715606689453, zero_point=58, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.9662625789642334, zero_point=50, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (downsample): Sequential(
+            (0): QuantizedConv2d(256, 256, kernel_size=(1, 1), stride=(2, 2), scale=1.0720546245574951, zero_point=56)
+            (1): Identity()
+          )
+          (qf): QFunctional(
+            scale=1.4804590940475464, zero_point=55
+            (activation_post_process): Identity()
+          )
+        )
+        (1): BasicBlock(
+          (conv1): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.9038472771644592, zero_point=61, padding=(1, 1))
+          (bn1): Identity()
+          (conv2): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.6761773824691772, zero_point=73, padding=(1, 1))
+          (bn2): Identity()
+          (relu1): LeakyReLU(negative_slope=0.01, inplace=True)
+          (relu2): LeakyReLU(negative_slope=0.01, inplace=True)
+          (qf): QFunctional(
+            scale=1.1896964311599731, zero_point=42
+            (activation_post_process): Identity()
+          )
+        )
+      )
+    )
+    (arm16): AttentionRefinementModule(
+      (conv): ConvBNReLU(
+        (conv): QuantizedConv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), scale=0.7903852462768555, zero_point=66, padding=(1, 1))
+        (bn): Identity()
+        (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+      )
+      (conv_atten): QuantizedConv2d(128, 128, kernel_size=(1, 1), stride=(1, 1), scale=0.10423801094293594, zero_point=58)
+      (bn_atten): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+      (qf): QFunctional(
+        scale=1.50846529006958, zero_point=2
+        (activation_post_process): Identity()
+      )
+    )
+    (arm32): AttentionRefinementModule(
+      (conv): ConvBNReLU(
+        (conv): QuantizedConv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), scale=0.5658520460128784, zero_point=56, padding=(1, 1))
+        (bn): Identity()
+        (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+      )
+      (conv_atten): QuantizedConv2d(128, 128, kernel_size=(1, 1), stride=(1, 1), scale=0.11038956791162491, zero_point=51)
+      (bn_atten): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+      (qf): QFunctional(
+        scale=1.208048939704895, zero_point=1
+        (activation_post_process): Identity()
+      )
+    )
+    (conv_head32): ConvBNReLU(
+      (conv): QuantizedConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), scale=2.535027265548706, zero_point=80, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv_head16): ConvBNReLU(
+      (conv): QuantizedConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), scale=1.3712396621704102, zero_point=77, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv_avg): ConvBNReLU(
+      (conv): QuantizedConv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), scale=0.04823554307222366, zero_point=62)
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (up32): Upsample(scale_factor=2.0, mode=nearest)
+    (up16): Upsample(scale_factor=2.0, mode=nearest)
+    (qf): QFunctional(
+      scale=1.5138306617736816, zero_point=3
+      (activation_post_process): Identity()
+    )
+  )
+  (sp): SpatialPath(
+    (conv1): ConvBNReLU(
+      (conv): QuantizedConv2d(1, 64, kernel_size=(3, 3), stride=(2, 2), scale=1.4583160877227783, zero_point=71, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv2): ConvBNReLU(
+      (conv): QuantizedConv2d(64, 64, kernel_size=(3, 3), stride=(2, 2), scale=1.215248703956604, zero_point=70, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv3): ConvBNReLU(
+      (conv): QuantizedConv2d(64, 64, kernel_size=(3, 3), stride=(2, 2), scale=1.0381852388381958, zero_point=61, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv_out): ConvBNReLU(
+      (conv): QuantizedConv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), scale=1.0199750661849976, zero_point=60)
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+  )
+  (ffm): FeatureFusionModule(
+    (convblk): ConvBNReLU(
+      (conv): QuantizedConv2d(256, 256, kernel_size=(1, 1), stride=(1, 1), scale=0.9743431806564331, zero_point=68)
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv): QuantizedConv2d(256, 256, kernel_size=(1, 1), stride=(1, 1), scale=0.09569396823644638, zero_point=37)
+    (bn): Identity()
+    (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    (qf0): QFunctional(
+      scale=0.569013774394989, zero_point=2
+      (activation_post_process): Identity()
+    )
+    (qf1): QFunctional(
+      scale=1.3941611051559448, zero_point=5
+      (activation_post_process): Identity()
+    )
+    (qf2): QFunctional(
+      scale=1.4331388473510742, zero_point=5
+      (activation_post_process): Identity()
+    )
+  )
+  (conv_out): BiSeNetOutput(
+    (conv): ConvBNReLU(
+      (conv): QuantizedConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), scale=0.5782263875007629, zero_point=91, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv_out): QuantizedConv2d(256, 5, kernel_size=(1, 1), stride=(1, 1), scale=0.31306904554367065, zero_point=59)
+    (up): Upsample(scale_factor=8.0, mode=nearest)
+  )
+  (conv_out16): BiSeNetOutput(
+    (conv): ConvBNReLU(
+      (conv): QuantizedConv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), scale=0.5689436197280884, zero_point=86, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv_out): QuantizedConv2d(64, 5, kernel_size=(1, 1), stride=(1, 1), scale=0.2855222225189209, zero_point=54)
+    (up): Upsample(scale_factor=8.0, mode=nearest)
+  )
+  (conv_out32): BiSeNetOutput(
+    (conv): ConvBNReLU(
+      (conv): QuantizedConv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), scale=16.142728805541992, zero_point=92, padding=(1, 1))
+      (bn): Identity()
+      (relu): LeakyReLU(negative_slope=0.01, inplace=True)
+    )
+    (conv_out): QuantizedConv2d(64, 5, kernel_size=(1, 1), stride=(1, 1), scale=41.71262741088867, zero_point=3)
+    (up): Upsample(scale_factor=16.0, mode=nearest)
+  )
+  (quant): Quantize(scale=tensor([0.0652]), zero_point=tensor([7]), dtype=torch.quint8)
+  (dequant): DeQuantize()
+)
