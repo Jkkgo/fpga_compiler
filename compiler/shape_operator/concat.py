@@ -19,7 +19,6 @@ class Concat(BaseShape):
 
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["Concat"]
 
     def get_shape_reg2(self):
         l_scale = self.para["l_scale"]
@@ -96,9 +95,3 @@ class Concat(BaseShape):
 
         return write_address, write_size
 
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg

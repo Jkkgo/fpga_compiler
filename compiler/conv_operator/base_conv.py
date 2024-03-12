@@ -1,14 +1,12 @@
-import os
-import shutil
 from abc import abstractmethod
 
-from compiler.lib.array_format import convert_scale, convert_bias, convert_weight
-from compiler.lib.write_data import write_conv, gen_coe_add, write_weight, clear_files, coe2bin
+from compiler.lib.write_data import *
 from compiler.lib.add_channel import *
 from compiler.lib.ins_format import leaky_format
+from compiler.lib.base_write import BaseWrite
 
 
-class BaseConv:
+class BaseConv(BaseWrite):
     """
     卷积操作的父类
     规定了卷积中一些通用的方法
@@ -24,14 +22,14 @@ class BaseConv:
     '''
 
     def __init__(self, para, feature, option, shared):
+        # 初始化父类
+        super().__init__(para, feature, option, shared)
+
         self.para = para
         self.feature = feature
         self.option = option
         self.shared = shared
-        if shared.layer_count != 1:
-            self.feature_shape = add_feature_shape(feature[0], self.shared.parallel)
-        else:
-            self.feature_shape = feature[0].shape
+        self.feature_shape = add_feature_shape(feature[0], self.shared.parallel)
 
         weight = np.load(self.para['local_weight_int'])
         weight = add_weight(weight, self.shared.parallel)
@@ -149,8 +147,7 @@ class BaseConv:
         此段if else 代码是为了适配卷积作为首层时，用first_layer这个参数来指示在卷积之前做一些特殊操作
         这种操作职能可以用shape操作中的pre代替
         '''
-        if (self.shared.layer_count + 1 == 1
-                and self.shared.start_op == 1):
+        if self.shared.layer_count == 1 and self.shared.start_op == 1:
             first_layer = 1
         else:
             first_layer = 0
@@ -192,9 +189,9 @@ class BaseConv:
         en_activation = self.option[3]
         if en_activation == 1:
             s3 = np.load(self.para['local_scale'])
-            # amend用于修正leakrelu
+            # amend用于修正leaky relu
             # 当采用relu做激活函数时，amend值无意义。
-            # 当采用leakrelu做激活函数时,fpga需要用amend值做修正
+            # 当采用leaky relu做激活函数时,fpga需要用amend值做修正
             amend = leaky_format(s3)
             conv_reg4 = amend
         else:
@@ -232,14 +229,14 @@ class BaseConv:
 
     def get_feature_address(self):
         feature_shape = self.feature_shape
-        # 获取特征图的唯一id
         feature_id = id(self.feature[0])
 
-        feature_address = 0
-        # 通过特征图id来查找地址表中的地址
-        for key, value in self.shared.address_table.items():
-            if feature_id == key:
-                feature_address = value
+        if self.shared.layer_count == 1:
+            feature_address = self.shared.picture_address
+        else:
+            # 通过特征图对应层数来查找地址表中的地址
+            feature_count = get_feature_count(feature_id, self.shared.layer_table)
+            feature_address = self.shared.address_table[feature_count - 1]
         # 计算特征图长度
         feature_size = feature_shape[0] * feature_shape[1] * feature_shape[2] * feature_shape[3]
 
@@ -297,127 +294,14 @@ class BaseConv:
 
     def update_shared(self, data_package):
         feature_id = id(self.feature[1])
-        weight_address = data_package["weight_address"]
         weight_size = data_package["weight_size"]
         write_address = data_package["write_address"]
         write_size = data_package["write_size"]
 
         self.shared.weight_address += weight_size
         self.shared.write_address += write_size
-        self.shared.address_table[feature_id] = write_address
+
+        self.shared.layer_table[feature_id] = self.shared.layer_count
+        self.shared.address_table.append(write_address)
 
         self.shared.layer_count += 1
-
-    '''
-    write_ins_file:写指令文件
-    params:
-        data_package: 计算结果字典
-    '''
-
-    def write_ins_file(self, data_package):
-        layer_count = str(self.shared.layer_count)
-        dat_name = 'auto_ins' + layer_count + '.dat'
-        file_path = self.shared.file_path + 'ins'
-        os.makedirs(file_path, exist_ok=True)
-        file_name = "{}/{}".format(file_path, dat_name)
-
-        # 如果是首层，则清空ins文件夹
-        if layer_count == '1':
-            clear_files(file_path)
-
-        # 如果是联测,则将前一层指令文件复制到本层,再去追加写入本层指令
-        if self.shared.generate_mode[0] == 1 and self.shared.layer_count != 1:
-            pre_file = file_path + '/auto_ins' + str(self.shared.layer_count - 1) + '.dat'
-            shutil.copyfile(pre_file, file_name)
-        # 写入指令
-        write_conv(file_name, data_package)
-
-    '''
-    write_result_file:写中间结果文件
-    '''
-
-    def write_result_file(self):
-        mid_result = self.feature[1]
-        result_shape = mid_result.shape
-
-        local_zp = self.para['local_zp']
-        local_zp = np.load(local_zp).astype(int).item()
-
-        parallel = self.shared.parallel
-        # 判断是否需要补通道,补完通道的形状是多少 np.ceil向上取整
-        add_channel = int(parallel * np.ceil(result_shape[1] / parallel))
-
-        layer_count = str(self.shared.layer_count)
-        file_name = 'auto_result' + layer_count + '.coe'
-        file_path = self.shared.file_path + 'mid_result'
-        os.makedirs(file_path, exist_ok=True)
-        file_name = "{}/{}".format(file_path, file_name)
-
-        # 如果是联测，则直接生成
-        if self.shared.generate_mode[0] == 1:
-            gen_coe_add(file_name, mid_result.int_repr(), local_zp, add_channel, parallel)
-        # 如果是单测，则只生成一层的中间结果
-        elif self.shared.layer_count == self.shared.generate_mode[1]:
-            gen_coe_add(file_name, mid_result.int_repr(), local_zp, add_channel, parallel)
-
-        # 如果是首层，则还生成输入bin
-        if self.shared.layer_count == 1:
-            input_feature = self.feature[0].int_repr()
-            channel = self.feature[0].shape[1]
-            input_path = file_path + "/auto_input.coe"
-            bin_path = file_path + "/auto_input.bin"
-            gen_coe_add(input_path, input_feature, 1, channel, channel)
-            coe2bin(input_path, bin_path)
-
-    '''
-    write_weight_file:写权重文件
-    '''
-
-    def write_weight_file(self):
-        pre_scale = np.load(self.para['pre_scale'])
-        pre_zp = np.load(self.para['pre_zp'])
-        local_weight = np.load(self.para['local_weight_int'])
-        local_weight_scale = np.load(self.para['local_weight_scale'])
-        local_scale = np.load(self.para['local_scale'])
-        local_bias = np.load(self.para['local_bias'])
-
-        # 计算移位之后的scale和移了多少位  scale = (s1 * s2) / s3
-        scale, shift = convert_scale(pre_scale, local_weight_scale, local_scale)
-        # 计算新的bias bias = symbol(符号位) + data_decimal(移位值) + data_integer(移位之后的bias)
-        bias = convert_bias(pre_zp, pre_scale, local_weight_scale, local_weight, local_bias)
-
-        parallel = self.shared.parallel
-        local_weight = add_weight(local_weight, parallel)
-        weight = convert_weight(local_weight, parallel)
-        scale = add_array(scale, parallel)
-        shift = add_array(shift, parallel)
-        bias = add_array(bias, parallel)
-
-        layer_count = str(self.shared.layer_count)
-        coe_name = 'auto_weight' + layer_count + '.coe'
-        bin_name = '/auto_weight' + layer_count + '.bin'
-        file_path = self.shared.file_path + 'weight'
-        os.makedirs(file_path, exist_ok=True)
-        file_name = "{}/{}".format(file_path, coe_name)
-
-        # 如果是首层，则清空weight文件夹
-        if layer_count == '1':
-            clear_files(file_path)
-
-        # 如果是联测,则将前一层权重文件复制到本层,再去追加写入本层权重
-        if self.shared.generate_mode[0] == 1 and self.shared.layer_count != 1:
-            pre_file = file_path + '/auto_weight' + str(self.shared.layer_count - 1) + '.coe'
-            shutil.copyfile(pre_file, file_name)
-
-        weight_package = {
-            "file_name": file_name,
-            "weight": weight,
-            "bias": bias,
-            "scale": scale,
-            "shift": shift,
-            "parallel": parallel
-        }
-        write_weight(weight_package)
-        # 如果是指定层数，则将该层coe格式权重转为bin
-        if self.shared.layer_count == self.shared.generate_mode[1]:
-            coe2bin(file_name, file_path + bin_name)

@@ -21,7 +21,6 @@ class UpBili(BaseShape):
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
         self.l_feature_shape = add_feature_shape(feature[0], 8)
-        self.shape_control = shared.shape_control["UpBili"]
 
     def get_dma_write(self):
         feature_shape = self.l_feature_shape
@@ -34,13 +33,6 @@ class UpBili(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
-
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg
 
     def write_result_file(self):
         mid_result = self.feature[1]

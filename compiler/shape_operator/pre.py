@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from compiler.lib.write_data import gen_coe_add, coe2bin, clear_files
+from compiler.lib.write_data import gen_coe_add, coe2bin, clear_files, get_feature_count
 from compiler.shape_operator.base_shape import BaseShape
 
 
@@ -21,7 +21,6 @@ class Pre(BaseShape):
     """
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["Pre"]
 
     def get_shape_reg2(self):
         std = self.shared.std
@@ -62,10 +61,12 @@ class Pre(BaseShape):
         feature_shape = feature.shape
         feature_id = id(feature)
 
-        feature_address = 0
-        for key, value in self.shared.address_table.items():
-            if feature_id == key:
-                feature_address = value
+        if self.shared.layer_count == 1:
+            feature_address = self.shared.picture_address
+        else:
+            # 通过特征图对应层数来查找地址表中的地址
+            feature_count = get_feature_count(feature_id, self.shared.layer_table)
+            feature_address = self.shared.address_table[feature_count - 1]
         feature_size = feature_shape[0] * feature_shape[1] * feature_shape[2] * feature_shape[3]
 
         l_feature_address = format(feature_address, '032b')
@@ -85,13 +86,6 @@ class Pre(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
-
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg
 
     def write_result_file(self):
         mid_result = self.feature[1]

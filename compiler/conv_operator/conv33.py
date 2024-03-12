@@ -1,7 +1,5 @@
-import numpy as np
 
 from compiler.conv_operator.base_conv import BaseConv
-from compiler.lib.add_channel import add_weight
 from compiler.lib.ins_format import conv33para
 
 
@@ -30,7 +28,7 @@ class Conv33(BaseConv):
     def get_conv_reg2(self):
         # conv_type = 0代表做3*3卷积
         conv_type = 0
-        if (self.shared.layer_count  == 1
+        if (self.shared.layer_count == 1
                 and self.shared.start_op == 1):
             first_layer = 1
         else:

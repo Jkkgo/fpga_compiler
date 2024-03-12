@@ -19,8 +19,8 @@ class SharedVariableContainer:
     mean = 0  # 整个数据集图片的均值,无均值填0
     std = 1  # 整个数据集图片的方差,无方差填1
     file_path = "../sim_data/"  # 生成指令、权重、对比结果路径
-    para_path = "../yolo_obb/para/"  # 提取npy文件路径
-    start_op = 1  # 用于首次卷积时指示输入是否要做特殊处理,不推荐使用,预处理层可以做得更好
+    para_path = "../yolo_obb/para_last/"  # 提取npy文件路径
+    start_op = 1  # 用于首次卷积时指示输入是否要做特殊处理
     layer_count = 1  # 用于维护网络层数
     # shape状态字典,用于维护shape操作的状态码
     shape_control = {
@@ -37,4 +37,5 @@ class SharedVariableContainer:
         'Pre': 11,
         'YoloSig': 12
     }
-    address_table = {}  # 读地址字典,用于维护特征图读地址变换
+    address_table = []  # 读地址字典,用于维护特征图读地址变换
+    layer_table = {}  # 特征图字典,记录网络结构每一层对应的特征图id
