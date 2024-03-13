@@ -1,6 +1,6 @@
+import cv2
 import torch
-from PIL import Image
-from torchvision import transforms
+from compiler.lib.array_format import picture_load
 from compiler.transit import Transit
 from compiler.transit import shared
 
@@ -14,24 +14,11 @@ from compiler.transit import shared
 def create_files():
     model = torch.jit.load(shared.model_path)
     model.eval()
-    image = Image.open(shared.img_path)
-    image_data = image.convert('L')
-    trans_new = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((28, 28)),
-    ])
-    input = trans_new(image_data).unsqueeze(0)
+
     with torch.no_grad():
         # ------------------------网络Init-------------------------- #
 
         torch.set_printoptions(profile='full')
-        feature_f = model.quant(input)
-        feature_q = feature_f.int_repr()  # 将量化后的特征转换为整数表示
-        # 存储了一个通道数量为 8 的零张量
-        feature_addchannel = torch.zeros([1, 8, feature_q.shape[2], feature_q.shape[3]], dtype=feature_q.dtype)
-        # 将feature_q中的通道部分复制到feature_addchannel的相应位置。可以看作是在feature_q的通道数上进行扩展，
-        # 将其复制到一个通道数为8的新张量中。
-        feature_addchannel[:, :feature_q.shape[1], :, :] = feature_q
 
         '''
                 主函数具体写法:
@@ -64,40 +51,54 @@ def create_files():
                         4.分块conv操作,根据分块数量生成 2*分块数量-1 层指令(满二叉树)
         '''
 
-        # 斜框没有预处理层,第零层不用管
-        # 0
-        # Transit(para1='', para2='quant', feature=[img, quant_feature_f], option=['Pre'])
+        # 1(pre预处理层)：详情请看shape_operator里面的pre.py的注释，里面写了第一层干了啥，让硬件那边知道
+        # 现在把预处理当作第一层，就会比原本多出14条指令
+        # img没有进行归一化，保存图片最原始的状态！不要用toTensor(),因为里面自带归一化
+        img = cv2.imread(shared.img_path, 0)
+        # 输入图片转为规定的尺寸
+        if img.shape[0] != shared.img_size:
+            img = cv2.resize(img, (shared.img_size, shared.img_size))
+
+        # 转为tensor格式
+        img = torch.from_numpy(img)
+        img = img.to(torch.float32)
+        img = img.unsqueeze(0)
+        img = img.unsqueeze(0)
+        img = img.to(torch.int)
+        image = picture_load(shared)
+        feature_f = model.quant(image)
+        Transit(para1='', para2='quant', feature=[img, feature_f], option=['Pre'])
 
         # ------------------------网络推理-------------------------- #
         # ------------- stem --------------- #
-        # 1
+        # 2
         bconv1_r = model.bconv1.conv(feature_f)
         bconv1_act_r = model.bconv1.relu(bconv1_r)
         Transit(para1='quant', para2='bconv1.conv',
-                feature=[feature_addchannel, bconv1_act_r],
+                feature=[feature_f, bconv1_act_r],
                 option=['Conv33', 2, 1, 1])  # stride=2, padding=1, 激活操作=True
         # gen_coe('../output1.coe', bconv1_act_r.int_repr())
-        # 2
+        # 3
         bconv2_r = model.bconv2.conv(bconv1_act_r)
         bconv2_act_r = model.bconv2.relu(bconv2_r)
         Transit(para1='bconv1.conv', para2='bconv2.conv',
                 feature=[bconv1_act_r, bconv2_act_r],
                 option=['Conv33', 1, 1, 1])
         # gen_coe('../output2.coe', bconv2_act_r.int_repr())
-        # 3
+        # 4
         bconv3_r = model.bconv3.conv(bconv2_act_r)
         bconv3_act_r = model.bconv3.relu(bconv3_r)
         Transit(para1='bconv2.conv', para2='bconv3.conv',
                 feature=[bconv2_act_r, bconv3_act_r],
                 option=['Conv33', 1, 1, 1])
         # gen_coe('../output3.coe', bconv3_act_r.int_repr())
-        # 4
+        # 5
         qf1_r = model.qf1.cat([bconv1_act_r, bconv3_act_r], 1)
         Transit(para1='bconv1.conv', para2='qf1', para3='bconv3.conv',
                 feature=[bconv1_act_r, qf1_r, bconv3_act_r],
                 option=['Concat'])
         # gen_coe('../output4.coe', qf1_r.int_repr())
-        # 5
+        # 6
         bconv4_r = model.bconv4.conv(qf1_r)
         bconv4_act_r = model.bconv4.relu(bconv4_r)
         Transit(para1='qf1', para2='bconv4.conv',
