@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 import torch
 from torch import nn
 
@@ -15,6 +17,18 @@ from lib.block_format import block
 def create_files():
     model = torch.jit.load(shared.model_path)
     model.eval()
+
+    image_path = shared.img_path
+    image_size = shared.img_size
+    # 输入图片以灰度图形式读取
+    input_img = cv2.imread(image_path, 0)
+    # 输入图片转为规定的尺寸
+    if input_img.shape[0] != image_size:
+        input_img = cv2.resize(input_img, (image_size, image_size))
+    input_img = np.expand_dims(input_img,axis = 0)
+    input_img = np.expand_dims(input_img,axis = 0)
+
+
     # picture_load为模型训练时的预处理方法，一般包含了将图片尺寸统一、转为灰度图、归一化{[(image/255)-mean]/std}
     img = picture_load(shared)
     with torch.no_grad():
@@ -203,7 +217,7 @@ def create_files():
         '''
 
         # layer ↓ 1
-        Transit(para1='', para2='quant', feature=[img, quant_feature_f], option=['Pre'])
+        Transit(para1='', para2='quant', feature=[input_img, quant_feature_f], option=['Pre'])
         # layer ↓ 2
         cp_Resnet18_conv1_feature = cp_Resnet18_conv1(quant_feature_f)
         cp_Resnet18_bn1_feature = cp_Resnet18_bn1(cp_Resnet18_conv1_feature)

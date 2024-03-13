@@ -36,18 +36,16 @@ params:
 
 
 def add_feature(feature, parallel):
-    feature = feature.dequantize()
-    feature = feature.numpy()
+    feature = feature.int_repr().numpy()
     feature_shape = feature.shape
 
     if feature_shape[1] % parallel != 0:  # 特征图输入通道变成parallel的倍数,不足补0
         channel_in_num = feature_shape[1] + parallel - feature_shape[1] % parallel
+        feature_add = np.zeros((feature_shape[0], channel_in_num, feature_shape[2], feature_shape[3]))
+        feature_add[:, :feature_shape[1], :, :] = feature
+        feature_add = feature_add.astype(np.int8)
     else:
-        channel_in_num = feature_shape[1]
-
-    feature_add = np.zeros((feature_shape[0], channel_in_num, feature_shape[2], feature_shape[3]))
-    feature_add[:, :feature_shape[1], :, :] = feature
-    feature_add = feature_add.astype(np.uint32)
+        feature_add = feature.astype(np.int8)
 
     return feature_add
 

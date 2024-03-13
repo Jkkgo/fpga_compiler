@@ -1,6 +1,6 @@
 
-from conv_operator.base_conv import BaseConv
-from lib.ins_format import conv11para
+from compiler.conv_operator.base_conv import BaseConv
+from compiler.lib.ins_format import conv11para
 
 
 class Conv11(BaseConv):

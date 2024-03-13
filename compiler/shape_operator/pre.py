@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 
-from lib.write_data import gen_coe_add, coe2bin, clear_files
-from shape_operator.base_shape import BaseShape
+from compiler.lib.write_data import gen_coe_add, coe2bin, clear_files, get_feature_count
+from compiler.shape_operator.base_shape import BaseShape
 
 
 class Pre(BaseShape):
@@ -21,7 +21,6 @@ class Pre(BaseShape):
     """
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["Pre"]
 
     def get_shape_reg2(self):
         std = self.shared.std
@@ -62,10 +61,12 @@ class Pre(BaseShape):
         feature_shape = feature.shape
         feature_id = id(feature)
 
-        feature_address = 0
-        for key, value in self.shared.address_table.items():
-            if feature_id == key:
-                feature_address = value
+        if self.shared.layer_count == 1:
+            feature_address = self.shared.picture_address
+        else:
+            # 通过特征图对应层数来查找地址表中的地址
+            feature_count = get_feature_count(feature_id, self.shared.layer_table)
+            feature_address = self.shared.address_table[feature_count - 1]
         feature_size = feature_shape[0] * feature_shape[1] * feature_shape[2] * feature_shape[3]
 
         l_feature_address = format(feature_address, '032b')
@@ -86,27 +87,27 @@ class Pre(BaseShape):
 
         return write_address, write_size
 
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg
-
     def write_result_file(self):
         mid_result = self.feature[1]
 
-        coe_name = 'auto_input' + '.coe'
-        bin_name = '/auto_input' + '.bin'
+        layer_count = str(self.shared.layer_count)
+        file_name = 'auto_result' + layer_count + '.coe'
         file_path = self.shared.file_path + 'mid_result'
         os.makedirs(file_path, exist_ok=True)
+        file_name = "{}/{}".format(file_path, file_name)
 
-        file_name = "{}/{}".format(file_path, coe_name)
-        clear_files(file_path)
+        # 如果是联测，则直接生成
         if self.shared.generate_mode[0] == 1:
             gen_coe_add(file_name, mid_result.int_repr(), 1, 1, 1)
-            coe2bin(file_name, file_path + bin_name)
+        # 如果是单测，则只生成一层的中间结果
         elif self.shared.layer_count == self.shared.generate_mode[1]:
             gen_coe_add(file_name, mid_result.int_repr(), 1, 1, 1)
-            coe2bin(file_name, file_path + bin_name)
+
+        # 如果是首层，则还生成输入bin
+        if self.shared.layer_count == 1:
+            input_feature = self.feature[0]
+            input_path = file_path + "/auto_input.coe"
+            bin_path = file_path + "/auto_input.bin"
+            gen_coe_add(input_path, input_feature, 1, 1, 1)
+            coe2bin(input_path, bin_path)
 

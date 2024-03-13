@@ -1,6 +1,6 @@
 import numpy as np
 
-from shape_operator.base_shape import BaseShape
+from compiler.shape_operator.base_shape import BaseShape
 
 
 class Concat(BaseShape):
@@ -16,9 +16,9 @@ class Concat(BaseShape):
     可得出 q3 = (s1/s3)*q1+(s1/s3)*[(s3/s1)z3-z1] 堆叠 (s2/s3)*q2+(s2/s3)*[(s3/s2)z3-z2]
 
     """
+
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["Concat"]
 
     def get_shape_reg2(self):
         l_scale = self.para["l_scale"]
@@ -81,9 +81,7 @@ class Concat(BaseShape):
         conv_reg5 = r_zp
         return conv_reg5
 
-
     def get_dma_write(self):
-
         l_feature_shape = self.l_feature_shape
         r_feature_shape = self.r_feature_shape
 
@@ -97,9 +95,3 @@ class Concat(BaseShape):
 
         return write_address, write_size
 
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg

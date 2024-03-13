@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 
-from lib.add_channel import add_feature
-from lib.write_data import gen_coe, gen_coe_add
-from shape_operator.base_shape import BaseShape
+from compiler.lib.add_channel import add_feature
+from compiler.lib.write_data import gen_coe, gen_coe_add
+from compiler.shape_operator.base_shape import BaseShape
 
 
 class Split(BaseShape):
@@ -19,7 +19,6 @@ class Split(BaseShape):
     """
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["Split"]
 
     def get_dma_write(self):
         feature_shape = self.l_feature_shape
@@ -32,14 +31,6 @@ class Split(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
-
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg
-
     def write_result_file(self):
         mid_result = self.feature[0]
         result_shape = mid_result.shape

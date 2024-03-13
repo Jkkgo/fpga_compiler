@@ -5,7 +5,7 @@ class SharedVariableContainer:
     generate_mode = [1, 66]
     # 这三个变量需要配合生成模式使用
     gen_ins = True  # 是否需要指令
-    gen_weight = False  # 是否需要生成权重
+    gen_weight = True  # 是否需要生成权重
     gen_result = False  # 是否需要生成对比结果,联测生成一次后建议关掉,太占用时间
 
     picture_address = 0  # 输入图片地址,一般记0
@@ -37,4 +37,5 @@ class SharedVariableContainer:
         'Pre': 11,
         'YoloSig': 12
     }
-    address_table = {}  # 读地址字典,用于维护特征图读地址变换
+    address_table = []  # 读地址字典,用于维护特征图读地址变换
+    layer_table = {}  # 特征图字典,记录网络结构每一层对应的特征图id

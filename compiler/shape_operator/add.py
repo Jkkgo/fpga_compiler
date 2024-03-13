@@ -1,7 +1,6 @@
 import numpy as np
 
-from lib.add_channel import add_feature
-from shape_operator.base_shape import BaseShape
+from compiler.shape_operator.base_shape import BaseShape
 
 
 class Add(BaseShape):
@@ -20,7 +19,6 @@ class Add(BaseShape):
     """
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["Add"]
 
     def get_shape_reg2(self):
         l_scale = self.para["l_scale"]
@@ -86,10 +84,3 @@ class Add(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
-
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg

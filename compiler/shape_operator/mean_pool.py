@@ -1,6 +1,6 @@
 import numpy as np
 
-from shape_operator.base_shape import BaseShape
+from compiler.shape_operator.base_shape import BaseShape
 
 
 class MeanPool(BaseShape):
@@ -16,7 +16,6 @@ class MeanPool(BaseShape):
     """
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
-        self.shape_control = shared.shape_control["MeanPool"]
 
     def get_shape_reg2(self):
         feature_shape = self.l_feature_shape
@@ -37,10 +36,3 @@ class MeanPool(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
-
-    def get_shape_control(self):
-        shape_control = self.shape_control
-        shape_control = format(shape_control, '04b')
-
-        shape_control_reg = shape_control.zfill(32)
-        return shape_control_reg

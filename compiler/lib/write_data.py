@@ -2,6 +2,9 @@ import os
 
 import numpy as np
 import torch
+from compiler.lib.add_channel import add_weight, add_array
+from compiler.lib.array_format import convert_scale, convert_bias, convert_weight
+
 
 # 指令集字典
 ins_address = {'TJPU_Conv_State': '00', 'TJPU_Conv_Control': '04',
@@ -338,3 +341,60 @@ def clear_files(folder_path):
             if os.path.isfile(file_path):
                 # 删除文件
                 os.remove(file_path)
+
+'''
+get_feature_count:在特征图字典里查找特征图id对应的层数
+params:
+    feature_id:特征图id
+    layer_table:特征图字典
+return:
+    feature_count:特征图所对应的层数
+'''
+
+
+def get_feature_count(feature_id, layer_table):
+    feature_count = 1
+    # 在特征图字典里查找特征图id对应的层数
+    for key, value in layer_table.items():
+        if feature_id == key:
+            feature_count = value
+    return feature_count
+
+
+
+'''
+get_weight:计算scale、bias、shift、weight并写入文件
+params:
+    para:npy文件路径字典
+    parallel:通道并行数
+    file_name:写入文件名
+'''
+def get_weight(para, parallel, file_name):
+    pre_scale = np.load(para['pre_scale'])
+    pre_zp = np.load(para['pre_zp'])
+    local_weight = np.load(para['local_weight_int'])
+    local_weight_scale = np.load(para['local_weight_scale'])
+    local_scale = np.load(para['local_scale'])
+    local_bias = np.load(para['local_bias'])
+
+    # 计算移位之后的scale和移了多少位  scale = (s1 * s2) / s3
+    scale, shift = convert_scale(pre_scale, local_weight_scale, local_scale)
+    # 计算新的bias bias = symbol(符号位) + data_decimal(移位值) + data_integer(移位之后的bias)
+    bias = convert_bias(pre_zp, pre_scale, local_weight_scale, local_weight, local_bias)
+
+    parallel = parallel
+    local_weight = add_weight(local_weight, parallel)
+
+    weight = convert_weight(local_weight, parallel)
+    scale = add_array(scale, parallel)
+    shift = add_array(shift, parallel)
+    bias = add_array(bias, parallel)
+    weight_package = {
+        "file_name": file_name,
+        "weight": weight,
+        "bias": bias,
+        "scale": scale,
+        "shift": shift,
+        "parallel": parallel
+    }
+    write_weight(weight_package)
