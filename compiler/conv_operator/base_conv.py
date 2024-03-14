@@ -36,24 +36,6 @@ class BaseConv(BaseWrite):
         self.weight_shape = weight.shape
 
     '''
-    __call__:实例化调用方法
-    '''
-
-    def __call__(self, *args, **kwargs):
-
-        data_package = self.packing_data()
-
-        if self.shared.layer_count <= self.shared.generate_mode[1]:
-            if self.shared.gen_ins:
-                self.write_ins_file(data_package)
-            if self.shared.gen_weight:
-                self.write_weight_file()
-            if self.shared.gen_result:
-                self.write_result_file()
-
-        self.update_shared(data_package)
-
-    '''
     packing_data:对计算结果进行打包
     return:
         data_package: 计算结果字典

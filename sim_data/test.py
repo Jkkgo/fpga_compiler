@@ -5,8 +5,8 @@ from compiler.utils.ins_utils import instruction_parsing
 
 # instruction_parsing("./ins/auto_ins1.dat")
 # instruction_parsing("./ins_obb.dat")
-instruction_parsing("./ins/auto_ins143.dat")
-# instruction_parsing("../yolo_obb/123/ins.dat")
+# instruction_parsing("./ins/auto_ins143.dat")
+instruction_parsing("../yolo_obb/123/ins.dat")
 # instruction_parsing("./ins/auto_ins7.dat")
 # instruction_parsing("./ins/auto_ins8.dat")
 # instruction_parsing("./ins/auto_ins9.dat")

@@ -1,9 +1,13 @@
 import os
 import shutil
+from abc import abstractmethod
 
 import numpy as np
+import torch
 
-from compiler.lib.write_data import clear_files, write_conv, gen_coe_add, coe2bin, get_weight, write_shape
+from compiler.lib.add_channel import add_feature, add_weight, add_feature_shape
+from compiler.lib.write_data import clear_files, write_conv, gen_coe_add, coe2bin, get_weight, write_shape, \
+    get_feature_count, coe2np, write_weight
 
 
 class BaseWrite:
@@ -26,6 +30,25 @@ class BaseWrite:
         self.feature = feature
         self.option = option
         self.shared = shared
+
+    '''
+        __call__:实例化调用方法
+    '''
+
+    def __call__(self, *args, **kwargs):
+
+        data_package = self.packing_data()
+
+        if self.shared.layer_count <= self.shared.generate_mode[1]:
+            if self.shared.gen_ins:
+                self.write_ins_file(data_package)
+            if self.shared.gen_weight:
+                self.write_weight_file()
+            if self.shared.gen_result:
+                self.write_result_file()
+        self.write_simulate_file()
+
+        self.update_shared(data_package)
 
     '''
     write_ins_file:写指令文件
@@ -116,10 +139,87 @@ class BaseWrite:
             shutil.copyfile(pre_file, file_name)
 
         if 'Conv' in self.option[0]:
-            get_weight(self.para, self.shared.parallel, file_name)
+            weight_package = get_weight(self.para, self.shared.parallel)
+            write_weight(weight_package, file_name)
+
         else:
             with open(file_name, 'a'):
                 pass
         # 如果是指定层数，则将该层coe格式权重转为bin
         if self.shared.layer_count == self.shared.generate_mode[1]:
             coe2bin(file_name, file_path + bin_name)
+
+    '''
+    write_simulate_file:写仿真文件
+    '''
+
+    def write_simulate_file(self):
+
+        file_path = self.shared.file_path + 'simulate_result'
+        layer_count = self.shared.layer_count
+        coe_name = 'auto_simulate' + str(layer_count) + '.coe'
+        file_name = "{}/{}".format(file_path, coe_name)
+        mid_result = self.feature[1]
+        result_shape = mid_result.shape
+        parallel = self.shared.parallel
+        if "Conv" in self.option[0]:
+            feature_id = id(self.feature[0])
+            weight = np.load(self.para['local_weight_int'])
+            weight = add_weight(weight, parallel)
+            weight = torch.tensor(weight)
+            local_zp = self.para['local_zp']
+            local_zp = np.load(local_zp).astype(int).item()
+
+            # 判断是否需要补通道,补完通道的形状是多少 np.ceil向上取整
+            add_channel = int(parallel * np.ceil(result_shape[1] / parallel))
+
+            if self.shared.layer_count == 1:
+                feature = add_feature(self.feature[0], parallel)
+                feature = torch.tensor(feature)
+            else:
+                # 通过特征图对应层数来查找地址表中的地址
+                feature_count = get_feature_count(feature_id, self.shared.layer_table)
+                input_name = 'auto_simulate' + str(feature_count) + '.coe'
+                input_path = "{}/{}".format(file_path, input_name)
+                feature_shape = add_feature_shape(self.feature[0], parallel)
+                feature = coe2np(input_path, feature_shape)
+
+            simulate_result = self.simulate(feature, weight)
+            gen_coe_add(file_name, simulate_result, local_zp, add_channel, parallel)
+        else:
+            feature_id_l = id(self.feature[0])
+            feature_r = None
+            if self.feature[2] is not None:
+                feature_id_r = id(self.feature[2])
+                feature_shape_r = add_feature_shape(self.feature[2], parallel)
+                feature_count_r = get_feature_count(feature_id_r, self.shared.layer_table)
+                input_name_r = 'auto_simulate' + str(feature_count_r) + '.coe'
+                input_path_r = "{}/{}".format(file_path, input_name_r)
+                feature_r = coe2np(input_path_r, feature_shape_r)
+
+            feature_shape_l = add_feature_shape(self.feature[0], parallel)
+            feature_count_l = get_feature_count(feature_id_l, self.shared.layer_table)
+            input_name_l = 'auto_simulate' + str(feature_count_l) + '.coe'
+            input_path_l = "{}/{}".format(file_path, input_name_l)
+            feature_l = coe2np(input_path_l, feature_shape_l)
+
+            simulate_result = self.simulate(feature_l, feature_r)
+
+    '''
+       packing_data:对计算结果进行打包,该方法为抽象方法,需要子类重写
+    '''
+
+    @abstractmethod
+    def packing_data(self):
+        pass
+
+    '''
+    update_shared:更新一些相关的共享变量,该方法为抽象方法,需要子类重写
+    '''
+
+    @abstractmethod
+    def update_shared(self, data_package):
+        pass
+
+    def simulate(self, feature, weight):
+        return 1
