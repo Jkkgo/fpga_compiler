@@ -1,3 +1,4 @@
+
 from compiler.conv_operator.base_conv import BaseConv
 from compiler.lib.ins_format import conv11para
 
@@ -16,7 +17,6 @@ class Conv11(BaseConv):
         option: [卷积类型,步长,padding,激活函数]
         shared: 共享变量集合
     '''
-
     def __init__(self, para, feature, option, shared):
         # 初始化父类
         super().__init__(para, feature, option, shared)
@@ -25,19 +25,19 @@ class Conv11(BaseConv):
     get_conv_reg2:计算2寄存器中的数据
     return:
         conv_reg2: 2寄存器数据
+        ps：conv_type是硬件规定的
     '''
-
     def get_conv_reg2(self):
         parallel = self.shared.parallel
         weight_shape = self.weight_shape
         feature_shape = self.feature_shape
 
-        # 如果入通道数小于8*parallel或者入通道数无法被8*parallel整除或者特征图尺寸为1，则采用1*1的卷积方式(硬件方面的bug)
+        # 如果入通道数小于 8*parallel 或者入通道无法被 8*parallel 整除或者特征图尺寸为1，则采用1*1的卷积方式(硬件方面的bug)
         if (weight_shape[1] < 8 * parallel
                 or weight_shape[1] % (8 * parallel) != 0
                 or feature_shape[2] == 1):
             conv_type = 2
-        # 否则采用1*1*卷积方式
+        # 否则采用1*1*8卷积方式
         else:
             conv_type = 1
 
@@ -51,6 +51,7 @@ class Conv11(BaseConv):
         first_layer = format(first_layer, '01b')
 
         conv_reg2 = first_layer + conv_type
+        # zfill(32)将字符串conv_reg2填充到总长度为32位，不够左侧补0
         conv_reg2 = conv_reg2.zfill(32)
 
         return conv_reg2
@@ -60,7 +61,6 @@ class Conv11(BaseConv):
     return:
         conv_reg3: 3寄存器数据
     '''
-
     def get_conv_reg3(self):
         data_size = None
         # 8入8出则单次数据量为64bit
