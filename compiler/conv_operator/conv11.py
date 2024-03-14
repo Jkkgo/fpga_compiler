@@ -31,10 +31,12 @@ class Conv11(BaseConv):
         weight_shape = self.weight_shape
         feature_shape = self.feature_shape
 
-        # 如果入通道数小于8或者特征图尺寸为1，则采用1*1的卷积方式(硬件方面的bug)
-        if weight_shape[1] < 8 * parallel or feature_shape[2] == 1:
+        # 如果入通道数小于8*parallel或者入通道数无法被8*parallel整除或者特征图尺寸为1，则采用1*1的卷积方式(硬件方面的bug)
+        if (weight_shape[1] < 8 * parallel
+                or weight_shape[1] % (8 * parallel) != 0
+                or feature_shape[2] == 1):
             conv_type = 2
-        # 否则采用1*1*卷积方式
+        # 否则采用1*1*8卷积方式
         else:
             conv_type = 1
 
