@@ -28,8 +28,6 @@ class Pre(BaseShape):
         scale = np.load(scale)
 
         shift = 2 ** 17
-        if std == 1:
-            scale_new = 1/scale
         scale_new = 1 / (255 * std * scale)
         scale_new = np.round(scale_new * shift).astype(np.uint32)
         scale_new = scale_new.item()
