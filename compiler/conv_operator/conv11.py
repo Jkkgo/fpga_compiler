@@ -37,7 +37,7 @@ class Conv11(BaseConv):
                 or weight_shape[1] % (8 * parallel) != 0
                 or feature_shape[2] == 1):
             conv_type = 2
-        # 否则采用1*1*卷积方式
+        # 否则采用1*1*8卷积方式
         else:
             conv_type = 1
 

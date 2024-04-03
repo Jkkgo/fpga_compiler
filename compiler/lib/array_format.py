@@ -1,9 +1,11 @@
+import math
+
 import cv2
 import numpy as np
 import torch
 
 '''
-convert_bias:计算量化后新的bias
+convert_bias:计算定点化后的bias,并进行拼接
 params:
     z1:输入特征图的zero_point值
     s1:输入特征图的scale值
@@ -16,29 +18,10 @@ return:
 
 
 def convert_bias(z1, s1, s2, q2, bias):
-    q2 = q2.astype(np.float32)
-    bias_first = bias / (s1 * s2)
-    bias_second = q2 * z1
-    bias_second = np.sum(bias_second, axis=1)
-    bias_second = np.sum(bias_second, axis=1)
-    bias_second = np.sum(bias_second, axis=1)
-
-    # new_bias = bias / (s1 * s2) - q2 * z1
-    bias = bias_first - bias_second
-
-    # 对bias做定点化
-    shift = np.zeros(bias.shape[0], dtype=np.int64)
-    for i, num in enumerate(bias):  # i和ii就是从n_bias中取值
-        while not ((2 ** 23) <= abs(num) <= (2 ** 24)):
-            if shift[i] >= 16:  # fpga里面最多移动16位,这样精度也够了
-                break
-            else:
-                num *= 2
-                shift[i] += 1
-        bias[i] = round(num)  # n_bias每个数四舍五入
-
+    # 计算定点化后新的bias
+    bias, shift = bias_int_point(z1, s1, s2, q2, bias)
     # 将符号位 移位值 定点化bias拼接在一起
-    out_bias = np.zeros(bias.shape[0], dtype=np.int64)
+    out_bias = np.zeros(bias.shape[0], dtype=np.uint32)
     for index in range(bias.shape[0]):
         # {:024b} 将format后的数字变为24位2二进制，不足补0；
         # & 0xffffff按位与,消去负数的符号位，并将剩下的数字用补码形式保留
@@ -58,6 +41,45 @@ def convert_bias(z1, s1, s2, q2, bias):
 
 
 '''
+bias_int_point:对bias做定点化,new_bias = bias / (s1 * s2) - q2 * z1
+params:
+    z1:输入特征图的zero_point值
+    s1:输入特征图的scale值
+    s2:权重的scale值
+    q2:量化后权重的值
+    bias:原始的bias数组
+return:
+    bias:定点化的bias,绝对值位于2**23到2**24之间
+    shift:定点化需要移位的次数
+'''
+
+
+def bias_int_point(z1, s1, s2, q2, bias):
+    q2 = q2.astype(np.float32)
+    bias_first = bias / (s1 * s2)
+    bias_second = q2 * z1
+    bias_second = np.sum(bias_second, axis=1)
+    bias_second = np.sum(bias_second, axis=1)
+    bias_second = np.sum(bias_second, axis=1)
+
+    # new_bias = bias / (s1 * s2) - q2 * z1
+    bias = bias_first - bias_second
+
+    # 对bias做定点化
+    shift = np.zeros(bias.shape[0], dtype=np.uint8)
+    for i, num in enumerate(bias):  # i和ii就是从n_bias中取值
+        while not ((2 ** 23) <= abs(num) <= (2 ** 24)):
+            if shift[i] >= 16:  # fpga里面最多移动16位,这样精度也够了
+                break
+            else:
+                num *= 2
+                shift[i] += 1
+        bias[i] = round(num)  # n_bias每个数四舍五入
+
+    return bias, shift
+
+
+'''
 convert_scale:计算量化后新的scale,并做定点化
 params:
     s1:输入特征图的scale值
@@ -73,14 +95,25 @@ def convert_scale(s1, s2, s3):
     # scale = (s1 * s2) / s3
     scale = (s1 * s2) / s3
     shift = np.zeros(scale.shape[0], dtype=np.uint32)
+    scale_temp = np.zeros(scale.shape[0], dtype=np.uint32)
 
-    # 对scale做定点化
     for i, num in enumerate(scale):
         while not (0.5 <= num <= 1.0):
             num *= 2
-            shift[i] += 1
-        scale[i] = np.round(scale[i] * (2 ** (shift[i] + 32)))
+        temp = num * (2 ** 32)
+        # 限制temp最高取到2**31防止后续运算操作溢出
+        if temp > 2 ** 27:
+            temp = 2 ** 27
+        scale_temp[i] = temp
+
+    for i, num in enumerate(scale):
+        shift[i] = round(math.log(scale_temp[i] / num, 2)) - 32
+
+    # 对scale做定点化
+    for i, num in enumerate(scale):
+        scale[i] = (np.round((s1 * s2[i]) / s3 * (2 ** (32 + shift[i]))))  # s1s2/s3 *2^(32+β)
     scale = scale.astype(np.uint32)
+
     return scale, shift - 1
 
 
@@ -98,7 +131,7 @@ def convert_weight(weight, parallel):
     k = 0
     weight_shape = weight.shape
     weight_size = weight_shape[0] * weight_shape[1] * weight_shape[2] * weight_shape[3]
-    out_weight = np.zeros(weight_size, dtype=np.uint32)
+    out_weight = np.zeros(weight_size, dtype=np.uint8)
     # 出通道读取次数
     out_num = int(weight_shape[0] / parallel)
     # 入通道读取次数

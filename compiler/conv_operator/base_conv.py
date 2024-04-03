@@ -4,6 +4,8 @@ from compiler.lib.write_data import *
 from compiler.lib.add_channel import *
 from compiler.lib.ins_format import leaky_format
 from compiler.lib.base_write import BaseWrite
+from compiler.lib.array_format import convert_scale, bias_int_point
+from compiler.lib.fpga_simulate import sim_conv, sim_leaky_relu, sim_quant
 
 
 class BaseConv(BaseWrite):
@@ -96,10 +98,11 @@ class BaseConv(BaseWrite):
         en_padding = 1 if self.option[2] > 0 else 0
         # en_padding指明了fpga是否需要做激活函数操作
         en_activation = self.option[3]
+        # z1指明了z1的值,用于指明做padding时需要补的数字
         z1 = np.load(self.para['pre_zp']).item()
         # z1_num指明了fpga做padding时需要补多少圈
         z1_num = self.option[2] if self.option[2] > 0 else 0
-        # z3指明了fpga做padding时需要补的数据,由于fpga采用量化后的定点数进行运算,所以不能单纯的去补零,而是补z3的值
+        # z3指明了z3的值,用于量化公式
         z3 = np.load(self.para['local_zp'])
         # en_stride=0代表步长为1,en_stride=1代表步长为2
         en_stride = 1 if self.option[1] == 2 else 0
@@ -287,3 +290,44 @@ class BaseConv(BaseWrite):
         self.shared.address_table.append(write_address)
 
         self.shared.layer_count += 1
+
+    '''
+    simulate:模拟FPGA定点运算方式
+    params:
+        feature:输入特征图数组[输入特征图左,输入特征图右/None]
+    return:
+        sim_result: 模拟计算结果
+    '''
+    def simulate(self, feature):
+        parallel = self.shared.parallel
+        para = self.para
+        option = self.option
+        leaky_ratio = self.shared.leaky_ratio
+
+        pre_scale = np.load(para['pre_scale'])
+        pre_zp = np.load(para['pre_zp'])
+        local_weight = np.load(para['local_weight_int'])
+        local_weight_scale = np.load(para['local_weight_scale'])
+        local_scale = np.load(para['local_scale'])
+        local_bias = np.load(para['local_bias'])
+        local_zp = np.load(para['local_zp'])
+        # 对bias做定点化,new_bias = bias / (s1 * s2) - q2 * z1
+        # z1, s1, s2, q2, bias
+        bias, bias_shift = bias_int_point(pre_zp, pre_scale, local_weight_scale, local_weight, local_bias)
+        bias = bias.astype(np.int64)
+        # 计算移位之后的scale和移了多少位  scale = (s1 * s2) / s3
+        scale, scale_shift = convert_scale(pre_scale, local_weight_scale, local_scale)
+        weight = add_weight(local_weight, parallel)
+
+        # 仿真conv操作
+        conv_result = sim_conv(feature[0], weight, option, pre_zp)
+
+        # 仿真conv操作后的量化计算
+        quant_result = sim_quant(conv_result, bias, bias_shift, scale, scale_shift, local_zp)
+
+        # 仿真量化计算之后的leaky_relu操作
+        if option[3]:
+            sim_result = sim_leaky_relu(quant_result, local_zp, local_scale, leaky_ratio)
+        else:
+            sim_result = quant_result
+        return sim_result

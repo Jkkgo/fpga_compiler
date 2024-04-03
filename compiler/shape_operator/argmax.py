@@ -27,7 +27,7 @@ class ArgMax(BaseShape):
 
         write_address = self.shared.write_address
         write_size = feature_shape[0] * feature_shape[1] * feature_shape[2] * feature_shape[3]
-        write_size = int(write_size / 64)
+        write_size = int(write_size / 8)
 
         write_address = format(write_address, "032b")
         write_size = format(write_size, "032b")

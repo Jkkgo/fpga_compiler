@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 from compiler.lib.array_format import picture_load
+from compiler.lib.write_data import gen_coe_add
 
 from compiler.transit import Transit
 from compiler.transit import shared
@@ -36,8 +37,9 @@ def create_files():
         feature_f = model.quant(img)
         # 图片补通道
         feature_q = feature_f.int_repr()
-        feature_addchannel = torch.zeros([1, 16, feature_q.shape[2], feature_q.shape[3]])
+        feature_addchannel = torch.zeros([1, 16, feature_q.shape[2], feature_q.shape[3]],dtype=torch.int16)
         feature_addchannel[:, :feature_q.shape[1], :, :] = feature_q
+        # gen_coe_add("../sim_data/input_add.coe",feature_addchannel,0,8,8)
 
         '''
                 主函数具体写法:
@@ -79,12 +81,17 @@ def create_files():
         # ------------- stem --------------- #
         # 1
         stem_0_r = stem_0.conv(feature_f)
+        stem_0_r_int = stem_0_r.int_repr()
+        # gen_coe_add("./1.coe", stem_0_r_int, 0, 16, 8)
         stem_0_act_r = stem_0.act(stem_0_r)
         Transit(para1='quant', para2='backbone.stem.0.conv',
                 feature=[feature_f, stem_0_act_r],
                 option=['Conv33', 1, 1, 1])
+        # exit()
 
         stem_1_r = stem_1.conv(stem_0_act_r)
+        stem_1_r_int = stem_1_r.int_repr()
+        # gen_coe_add("./2.coe", stem_1_r_int, 0, 32, 16)
         stem_1_act_r = stem_1.act(stem_1_r)
         # 2
         Transit(para1='backbone.stem.0.conv', para2='backbone.stem.1.conv',
@@ -92,6 +99,8 @@ def create_files():
                 option=['Conv33', 2, 1, 1])
         # 3
         stem_2_r = stem_2.conv(stem_1_act_r)
+        stem_2_r_int = stem_2_r.int_repr()
+        # gen_coe_add("./3.coe", stem_2_r_int, 0, 32, 16)
         stem_2_act_r = stem_2.act(stem_2_r)
         Transit(para1='backbone.stem.1.conv', para2='backbone.stem.2.conv',
                 feature=[stem_1_act_r, stem_2_act_r],

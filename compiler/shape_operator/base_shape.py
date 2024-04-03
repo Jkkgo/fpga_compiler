@@ -1,6 +1,5 @@
 from abc import abstractmethod
 
-
 from compiler.lib.add_channel import add_feature_shape
 from compiler.lib.base_write import BaseWrite
 from compiler.lib.write_data import get_feature_count
@@ -19,6 +18,7 @@ class BaseShape(BaseWrite):
         option: [shape类型]
         shared: 共享变量集合
     '''
+
     def __init__(self, para, feature, option, shared):
         # 初始化父类
         super().__init__(para, feature, option, shared)
@@ -37,6 +37,7 @@ class BaseShape(BaseWrite):
     return:
         data_package: 计算结果字典
     '''
+
     def packing_data(self):
         shape_reg0 = self.get_shape_reg0()
         shape_reg1 = self.get_shape_reg1()
@@ -88,6 +89,7 @@ class BaseShape(BaseWrite):
     return:
         shape_reg1: 1寄存器数据
     '''
+
     def get_shape_reg1(self):
         r_channel_in = 0
         input_para_r = self.para['input_para_r']
@@ -109,6 +111,7 @@ class BaseShape(BaseWrite):
     return:
         shape_reg2: 2寄存器数据
     '''
+
     def get_shape_reg2(self):
         l_scale = 0
         l_scale = format(l_scale, "032b")
@@ -121,6 +124,7 @@ class BaseShape(BaseWrite):
     return:
         shape_reg3: 3寄存器数据
     '''
+
     def get_shape_reg3(self):
         r_scale = 0
 
@@ -134,6 +138,7 @@ class BaseShape(BaseWrite):
     return:
         shape_reg4: 4寄存器数据
     '''
+
     def get_shape_reg4(self):
         l_zp = 0
 
@@ -147,6 +152,7 @@ class BaseShape(BaseWrite):
     return:
         shape_reg5: 5寄存器数据
     '''
+
     def get_shape_reg5(self):
         r_zp = 0
 
@@ -163,6 +169,7 @@ class BaseShape(BaseWrite):
         r_feature_address: 右输入特征图读取地址
         r_feature_size: 右输入特征图读取长度
     '''
+
     def get_dma_read(self):
 
         l_feature_address, l_feature_size = self.get_one_read(self.feature[0], self.l_feature_shape)
@@ -184,6 +191,7 @@ class BaseShape(BaseWrite):
         feature_address: 输入特征图读取地址
         feature_size: 输入特征图读取长度
     '''
+
     def get_one_read(self, feature, feature_shape):
         # 通过特征图id来查找地址表中的地址
         feature_id = id(feature)
@@ -204,6 +212,7 @@ class BaseShape(BaseWrite):
         write_address: 输出特征图写回地址
         write_size: 输入特征图写回长度
     '''
+
     @abstractmethod
     def get_dma_write(self):
         write_address = 0
@@ -217,6 +226,7 @@ class BaseShape(BaseWrite):
     return:
         shape_control_reg: shape类型寄存器数据
     '''
+
     @abstractmethod
     def get_shape_control(self):
         shape_name = self.option[0]
@@ -232,6 +242,7 @@ class BaseShape(BaseWrite):
     更新特征图地址表
     更新层数
     '''
+
     def update_shared(self, data_package):
         feature_id = id(self.feature[1])
         write_address = data_package["write_address"]
@@ -243,3 +254,6 @@ class BaseShape(BaseWrite):
         self.shared.address_table.append(write_address)
 
         self.shared.layer_count += 1
+
+    def simulate(self, feature):
+        pass

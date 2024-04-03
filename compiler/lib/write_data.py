@@ -6,6 +6,7 @@ import torch
 from compiler.lib.add_channel import add_weight, add_array
 from compiler.lib.array_format import convert_scale, convert_bias, convert_weight
 
+
 # 指令集字典
 ins_address = {'TJPU_Conv_State': '00', 'TJPU_Conv_Control': '04',
                'TJPU_Shape_State': '08', 'TJPU_Shape_Control': '0C',
@@ -368,7 +369,8 @@ get_weight:计算scale、bias、shift、weight并写入文件
 params:
     para:npy文件路径字典
     parallel:通道并行数
-    file_name:写入文件名
+return:
+    weight_package:权重字典
 '''
 
 
@@ -418,7 +420,7 @@ def coe2np(coe_path, feature_shape):
         lines = file.readlines()
         # 遍历每一行
         for line in lines:
-            # 去除每行末尾的换行符并打印
+            # 去除每行末尾的换行符
             line_str = line.strip()
             # 使用切片将字符串每两个字符分割开来,并转成十进制
             split_strings = [int(line_str[i:i + 2], 16) for i in range(0, len(line_str), 2)]
@@ -427,13 +429,13 @@ def coe2np(coe_path, feature_shape):
             # 使用map()函数将字符串数组中的每个元素转换为整数，并放入一个一维数组中
             line_data = list(map(int, split_strings))
             coe_data.extend(line_data)
-    numpy_data = np.zeros(feature_shape, dtype='int8')
+    numpy_data = np.zeros(feature_shape, dtype=np.uint8)
     i = 0
     for r in range(feature_shape[2]):  # hang
         for c in range(feature_shape[3]):  # lie
             for ch in range(feature_shape[1]):  # channel
                 for n in range(feature_shape[0]):  # image_num
-                    numpy_data[n][ch][c][r] = coe_data[i]
+                    numpy_data[n][ch][r][c] = coe_data[i]
                     i += 1
 
     return numpy_data

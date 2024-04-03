@@ -2,11 +2,13 @@ class SharedVariableContainer:
     # 生成模式有两种，
     # [0,层数]：测单层，用于单层仿真,生成单层指令、权重、对比结果
     # [1,层数]：联测,用于侧板子,生成1-本层的连续指令、权重、对比结果
-    generate_mode = [1, 143]
+    generate_mode = [1, 126]
     # 这三个变量需要配合生成模式使用
-    gen_ins = True  # 是否需要指令
+    gen_ins = False  # 是否需要指令
     gen_weight = False  # 是否需要生成权重
-    gen_result = False  # 是否需要生成对比结果,联测生成一次后建议关掉,太占用时间
+    gen_result = False  # 是否需要生成pytorch结果,联测生成一次后建议关掉,太占用时间
+
+    gen_simulate = False  # 是否需要生成仿真结果(2024/4/3目前处于测试阶段)
 
     picture_address = 0  # 输入图片地址,一般记0
     write_address = 0x640000  # 特征图起始地址,一般接在输入图片之后
@@ -39,3 +41,4 @@ class SharedVariableContainer:
     }
     address_table = []  # 读地址字典,用于维护特征图读地址变换
     layer_table = {}  # 特征图字典,记录网络结构每一层对应的特征图id
+    leaky_ratio = 0.1

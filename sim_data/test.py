@@ -1,24 +1,30 @@
+import numpy as np
+
 from compiler.lib.write_data import coe2bin
+from compiler.utils.compare_utils import coe_comparison
 from compiler.utils.ins_utils import instruction_parsing
-
-
 
 # instruction_parsing("./ins/auto_ins1.dat")
 # instruction_parsing("./ins_obb.dat")
 # instruction_parsing("./ins/auto_ins143.dat")
-instruction_parsing("../yolo_obb/123/ins.dat")
-# instruction_parsing("./ins/auto_ins7.dat")
+# instruction_parsing("../yolo_obb/123/ins.dat")
+# instruction_parsing("./ins/auto_ins142.dat")
 # instruction_parsing("./ins/auto_ins8.dat")
 # instruction_parsing("./ins/auto_ins9.dat")
 
 # instruction_parsing("./ins.dat")
 
-# coe_comparison("./weight/weight1.coe","./weight/weight1_real.coe")
-# coe2bin("weight_block1.coe","weight_block1.bin")
+coe_comparison("./simulate_result/auto_simulate143.coe","./mid_result/auto_result143.coe")
+# coe_comparison("./simulate_result/auto_simulate1.coe","../yolo_obb/fpga_1.coe")
+# coe_comparison("./mid_result/auto_result1.coe","../yolo_obb/fpga_1.coe")
+# coe_comparison("./simulate_result/auto_simulate3.coe", "../compiler/3.coe")
+
+
+# coe2bin("input_add.coe","input_add.bin")
 # coe2bin("weight_block2.coe","weight_block2.bin")
 # coe2bin("weight_block3.coe","weight_block3.bin")
 
-# sdasderads
+
 def bin2coe(binpath, coepath):
     target = open(coepath, "w")
     binfile = open(binpath, 'rb')
@@ -41,6 +47,3 @@ def bin2coe(binpath, coepath):
     binfile.close()
 
 # bin2coe("weight.bin","weight.coe")
-
-
-

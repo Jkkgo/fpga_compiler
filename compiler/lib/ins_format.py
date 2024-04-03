@@ -93,3 +93,6 @@ def leaky_format(s3):
             out_str += '10'
 
     return out_str
+
+
+leaky_format(0.03804858)

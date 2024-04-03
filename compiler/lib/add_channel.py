@@ -21,7 +21,7 @@ def add_weight(weight, parallel):
     else:
         channel_out_num = weight_shape[0]
 
-    weight_add = np.zeros((channel_out_num, channel_in_num, weight_shape[2], weight_shape[3]), dtype=np.uint8)
+    weight_add = np.zeros((channel_out_num, channel_in_num, weight_shape[2], weight_shape[3]), dtype=np.int32)
     weight_add[:weight_shape[0], :weight_shape[1], :, :] = weight
 
     return weight_add
@@ -43,9 +43,9 @@ def add_feature(feature, parallel):
         channel_in_num = feature_shape[1] + parallel - feature_shape[1] % parallel
         feature_add = np.zeros((feature_shape[0], channel_in_num, feature_shape[2], feature_shape[3]))
         feature_add[:, :feature_shape[1], :, :] = feature
-        feature_add = feature_add.astype(np.int8)
+        feature_add = feature_add.astype(np.uint8)
     else:
-        feature_add = feature.astype(np.int8)
+        feature_add = feature.astype(np.uint8)
 
     return feature_add
 
