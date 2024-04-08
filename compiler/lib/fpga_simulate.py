@@ -3,6 +3,7 @@ import torch
 from torch import nn
 
 from compiler.lib.ins_format import leaky_format
+from numpy.lib.stride_tricks import as_strided as strided
 
 
 def sim_leaky_relu(quant_result, local_zp, local_scale, leakyRatio):
@@ -110,3 +111,47 @@ def sim_conv(feature, weight, option, pre_zp):
     conv_result = conv(feature)
 
     return conv_result
+
+
+"""
+max_pooling:实现最大池化操作
+params:
+    feature:输入的特征图
+    pool_size:池化窗口大小，默认为 (2, 2)
+    strides:池化窗口的步长，默认为 (2, 2)
+
+return:
+    result:池化后的结果
+"""
+
+
+def max_pooling(feature, pool_size=(2, 2), strides=(2, 2)):
+    # 获取输入数组的形状
+    batch, channel, height, width = feature.shape
+
+    # 获取池化窗口的大小和步长
+    pool_height, pool_width = pool_size
+    stride_height, stride_width = strides
+
+    # 计算输出数组的形状
+    output_height = (height - pool_height) // stride_height + 1
+    output_width = (width - pool_width) // stride_width + 1
+
+    # 初始化输出数组
+    result = np.zeros((batch, channel, output_height, output_width), dtype=np.uint8)
+
+    # 对输入数组进行池化
+    for ch in range(channel):
+        for r in range(output_width):
+            for c in range(output_height):
+                # 计算池化窗口在输入数组上的索引范围
+                c_start = c * stride_height
+                c_end = c_start + pool_height
+                r_start = r * stride_width
+                r_end = r_start + pool_width
+
+                # 从输入数组中获取池化窗口，并找到窗口中的最大值
+                window = feature[0, ch, r_start:r_end, c_start:c_end]
+                result[0, ch, r, c] = np.max(window)
+
+    return result

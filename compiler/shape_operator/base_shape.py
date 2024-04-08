@@ -255,5 +255,8 @@ class BaseShape(BaseWrite):
 
         self.shared.layer_count += 1
 
+    '''
+       simulate:模拟FPGA定点运算方式,该方法为抽象方法,需要子类重写
+    '''
     def simulate(self, feature):
         pass
