@@ -159,27 +159,28 @@ class BaseWrite:
         coe_name = 'auto_simulate' + str(layer_count) + '.coe'
         file_name = "{}/{}".format(file_path, coe_name)
         parallel = self.shared.parallel
-        feature_id_l = id(self.feature[0])
-        feature_r = None
+        feature = self.feature
+        feature_id_l = id(feature[0])
 
-        if self.shared.layer_count == 1:
-            feature_l = add_feature(self.feature[0], parallel)
-        else:
-            # 通过特征图对应层数来查找地址表中的地址
-            feature_count = get_feature_count(feature_id_l, self.shared.layer_table)
-            input_name = 'auto_simulate' + str(feature_count) + '.coe'
-            input_path = "{}/{}".format(file_path, input_name)
-            if os.path.exists(input_path):
-                feature_shape_l = add_feature_shape(self.feature[0], parallel)
-                feature_l = coe2np(input_path, feature_shape_l)
-            # 如果输入coe不存在,则以feature为输入
+        # 如果是联测，则直接生成
+        if self.shared.generate_mode[0] == 1:
+            if self.shared.layer_count == 1:
+                feature_l = add_feature(feature[0], parallel)
             else:
-                feature_l = add_feature(self.feature[0], parallel)
+                # 通过特征图对应层数来查找地址表中的地址
+                feature_count = get_feature_count(feature_id_l, self.shared.layer_table)
+                input_name = 'auto_simulate' + str(feature_count) + '.coe'
+                input_path = "{}/{}".format(file_path, input_name)
+                if os.path.exists(input_path):
+                    feature_shape_l = add_feature_shape(feature[0], parallel)
+                    feature_l = coe2np(input_path, feature_shape_l)
+                # 如果输入coe不存在,则以feature为输入
+                else:
+                    feature_l = add_feature(feature[0], parallel)
 
-        if "Conv" not in self.option[0]:
-            if self.feature[2] is not None:
-                feature_id_r = id(self.feature[2])
-                feature_shape_r = add_feature_shape(self.feature[2], parallel)
+            if "Conv" not in self.option[0] and feature[2] is not None:
+                feature_id_r = id(feature[2])
+                feature_shape_r = add_feature_shape(feature[2], parallel)
                 feature_count_r = get_feature_count(feature_id_r, self.shared.layer_table)
                 input_name_r = 'auto_simulate' + str(feature_count_r) + '.coe'
                 input_path_r = "{}/{}".format(file_path, input_name_r)
@@ -187,17 +188,21 @@ class BaseWrite:
                     feature_r = coe2np(input_path_r, feature_shape_r)
                 # 如果输入coe不存在,则以feature为输入
                 else:
-                    feature_r = add_feature(self.feature[2], parallel)
-        # 将输入特征图
-        feature = [feature_l, feature_r]
+                    feature_r = add_feature(feature[2], parallel)
+                # 存入新的输入特征图
+                feature[2] = feature_r
+            # 存入新的输入特征图
+            feature[0] = feature_l
 
-        # 如果是联测，则直接生成
-        if self.shared.generate_mode[0] == 1:
             simulate_result = self.simulate(feature)
             if simulate_result is not None:
                 gen_coe_add(file_name, simulate_result, 0, simulate_result.shape[1], parallel)
+
         # 如果是单测，则只生成一层的中间结果
         elif self.shared.layer_count == self.shared.generate_mode[1]:
+            feature[0] = add_feature(feature[0], parallel)
+            if "Conv" not in self.option[0] and feature[2] is not None:
+                feature[2] = add_feature(feature[2], parallel)
             simulate_result = self.simulate(feature)
             if simulate_result is not None:
                 gen_coe_add(file_name, simulate_result, 0, simulate_result.shape[1], parallel)
@@ -221,6 +226,7 @@ class BaseWrite:
     '''
        simulate:模拟FPGA定点运算方式,该方法为抽象方法,需要子类重写
     '''
+
     @abstractmethod
     def simulate(self, feature):
         pass

@@ -5,7 +5,7 @@ from compiler.lib.add_channel import *
 from compiler.lib.ins_format import leaky_format
 from compiler.lib.base_write import BaseWrite
 from compiler.lib.array_format import convert_scale, bias_int_point
-from compiler.lib.fpga_simulate import sim_conv, sim_leaky_relu, sim_quant
+from compiler.lib.fpga_simulate import sim_conv, sim_leaky_relu, sim_conv_quant
 
 
 class BaseConv(BaseWrite):
@@ -323,7 +323,7 @@ class BaseConv(BaseWrite):
         conv_result = sim_conv(feature[0], weight, option, pre_zp)
 
         # 仿真conv操作后的量化计算
-        quant_result = sim_quant(conv_result, bias, bias_shift, scale, scale_shift, local_zp)
+        quant_result = sim_conv_quant(conv_result, bias, bias_shift, scale, scale_shift, local_zp)
 
         # 仿真量化计算之后的leaky_relu操作
         if option[3]:
