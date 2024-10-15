@@ -5,9 +5,9 @@ from abc import abstractmethod
 import numpy as np
 import torch
 
-from compiler.lib.add_channel import add_feature, add_weight
+from compiler.lib.add_channel import add_feature, add_feature_shape
 from compiler.lib.write_data import clear_files, write_conv, gen_coe_add, coe2bin, get_weight, write_shape, \
-    get_feature_count
+    get_feature_count, coe2np, write_weight
 
 
 class BaseWrite:
@@ -46,7 +46,8 @@ class BaseWrite:
                 self.write_weight_file()
             if self.shared.gen_result:
                 self.write_result_file()
-        # self.write_simulate_file()
+            if self.shared.gen_simulate:
+                self.write_simulate_file()
 
         self.update_shared(data_package)
 
@@ -139,7 +140,9 @@ class BaseWrite:
             shutil.copyfile(pre_file, file_name)
 
         if 'Conv' in self.option[0]:
-            get_weight(self.para, self.shared.parallel, file_name)
+            weight_package = get_weight(self.para, self.shared.parallel)
+            write_weight(weight_package, file_name)
+
         else:
             with open(file_name, 'a'):
                 pass
@@ -152,26 +155,58 @@ class BaseWrite:
     '''
 
     def write_simulate_file(self):
-
         file_path = self.shared.file_path + 'simulate_result'
+        layer_count = self.shared.layer_count
+        coe_name = 'auto_simulate' + str(layer_count) + '.coe'
+        file_name = "{}/{}".format(file_path, coe_name)
         parallel = self.shared.parallel
-        feature_id = id(self.feature[0])
-        weight = np.load(self.para['local_weight_int'])
-        weight = add_weight(weight, parallel)
-        weight = torch.tensor(weight)
+        feature = self.feature
+        feature_id_l = id(feature[0])
 
-        if self.shared.layer_count == 1:
-            feature = add_feature(self.feature[0], parallel)
-            feature = torch.tensor(feature)
-            simulate_result = torch.nn.functional.conv2d(input=feature, weight=weight, stride=self.option[1])
-        else:
-            # 通过特征图对应层数来查找地址表中的地址
-            feature_count = get_feature_count(feature_id, self.shared.layer_table)
-            coe_name = 'auto_simulate'+str(feature_count)+'.coe'
-            file_name = "{}/{}".format(file_path, coe_name)
-            # feature = coe2np(file_name)
+        # 如果是联测，则直接生成
+        if self.shared.generate_mode[0] == 1:
+            if self.shared.layer_count == 1:
+                feature_l = add_feature(feature[0], parallel)
+            else:
+                # 通过特征图对应层数来查找地址表中的地址
+                feature_count = get_feature_count(feature_id_l, self.shared.layer_table)
+                input_name = 'auto_simulate' + str(feature_count) + '.coe'
+                input_path = "{}/{}".format(file_path, input_name)
+                if os.path.exists(input_path):
+                    feature_shape_l = add_feature_shape(feature[0], parallel)
+                    feature_l = coe2np(input_path, feature_shape_l)
+                # 如果输入coe不存在,则以feature为输入
+                else:
+                    feature_l = add_feature(feature[0], parallel)
 
+            if "Conv" not in self.option[0] and feature[2] is not None:
+                feature_id_r = id(feature[2])
+                feature_shape_r = add_feature_shape(feature[2], parallel)
+                feature_count_r = get_feature_count(feature_id_r, self.shared.layer_table)
+                input_name_r = 'auto_simulate' + str(feature_count_r) + '.coe'
+                input_path_r = "{}/{}".format(file_path, input_name_r)
+                if os.path.exists(input_path_r):
+                    feature_r = coe2np(input_path_r, feature_shape_r)
+                # 如果输入coe不存在,则以feature为输入
+                else:
+                    feature_r = add_feature(feature[2], parallel)
+                # 存入新的输入特征图
+                feature[2] = feature_r
+            # 存入新的输入特征图
+            feature[0] = feature_l
 
+            simulate_result = self.simulate(feature)
+            if simulate_result is not None:
+                gen_coe_add(file_name, simulate_result, 0, simulate_result.shape[1], parallel)
+
+        # 如果是单测，则只生成一层的中间结果
+        elif self.shared.layer_count == self.shared.generate_mode[1]:
+            feature[0] = add_feature(feature[0], parallel)
+            if "Conv" not in self.option[0] and feature[2] is not None:
+                feature[2] = add_feature(feature[2], parallel)
+            simulate_result = self.simulate(feature)
+            if simulate_result is not None:
+                gen_coe_add(file_name, simulate_result, 0, simulate_result.shape[1], parallel)
 
     '''
        packing_data:对计算结果进行打包,该方法为抽象方法,需要子类重写
@@ -187,4 +222,12 @@ class BaseWrite:
 
     @abstractmethod
     def update_shared(self, data_package):
+        pass
+
+    '''
+       simulate:模拟FPGA定点运算方式,该方法为抽象方法,需要子类重写
+    '''
+
+    @abstractmethod
+    def simulate(self, feature):
         pass

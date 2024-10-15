@@ -210,7 +210,7 @@ def create_files():
                 option=['卷积操作名',stride,padding,是否使用激活函数,分块数量]
                 )
             特殊规则：
-                1.第0层的para1为空
+                1.预处理层的para1为空
                 2.若本层的para2没有可用的npy文件,则用本层的para1参数代替
                 3.若shape操作中只有一个输入,则该操作的para3和feature[2]可省略
                 4.分块conv操作,根据分块数量生成 2*分块数量-1 层指令(满二叉树)

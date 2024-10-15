@@ -19,6 +19,7 @@ params:传入参数即为主函数的所有参数
 
 def block(para1='', para2='', feature=None, option=None):
     block_num = option[4]
+
     # 将输出特征图进行分块
     output_block = block_feature(feature[1], block_num)
     # 将权重进行分块
@@ -71,12 +72,11 @@ def block_weight(local_para, block_num):
     para_name = []
     for i in range(block_num):
         block_name = para_path + '_' + str(i)
-
         start_channel_out = i * block_shape_out
         end_channel_out = (i + 1) * block_shape_out
 
-        np.save(block_name + ".weight.scale.npy", local_weight_scale)
-        np.save(block_name + ".weight.zero_point.npy", local_weight_zp)
+        np.save(block_name + ".weight.scale.npy", local_weight_scale[start_channel_out:end_channel_out])
+        np.save(block_name + ".weight.zero_point.npy", local_weight_zp[start_channel_out:end_channel_out])
         np.save(block_name + ".weight.npy",
                 local_weight[start_channel_out:end_channel_out, :, :, :])
         np.save(block_name + ".weight.int.npy",
@@ -86,7 +86,6 @@ def block_weight(local_para, block_num):
         np.save(block_name + ".bias.npy", local_bias[start_channel_out:end_channel_out])
         para_name.append(local_para + '_' + str(i))
     return para_name
-
 
 
 '''

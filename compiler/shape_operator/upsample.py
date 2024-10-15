@@ -1,3 +1,4 @@
+from compiler.lib.fpga_simulate import up_sample
 from compiler.shape_operator.base_shape import BaseShape
 
 
@@ -11,6 +12,7 @@ class UpSample(BaseShape):
     例:1,8,80,80 => 1,8,160,160
 
     """
+
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
 
@@ -25,3 +27,7 @@ class UpSample(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
+
+    def simulate(self, feature):
+        simulate_result = up_sample(feature[0])
+        return simulate_result

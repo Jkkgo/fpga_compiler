@@ -1,3 +1,4 @@
+from compiler.lib.fpga_simulate import max_pooling
 from compiler.shape_operator.base_shape import BaseShape
 
 
@@ -10,6 +11,7 @@ class MaxPool(BaseShape):
     例: 1,256,40,40=>1,256,20,20
 
     """
+
     def __init__(self, para, feature, option, shared):
         super().__init__(para, feature, option, shared)
 
@@ -24,3 +26,7 @@ class MaxPool(BaseShape):
         write_size = format(write_size, "032b")
 
         return write_address, write_size
+
+    def simulate(self, feature):
+        simulate_result = max_pooling(feature[0])
+        return simulate_result

@@ -1,5 +1,6 @@
 import numpy as np
 
+from compiler.lib.fpga_simulate import sim_round, sim_concat_quant
 from compiler.shape_operator.base_shape import BaseShape
 
 
@@ -95,3 +96,21 @@ class Concat(BaseShape):
 
         return write_address, write_size
 
+    def simulate(self, feature):
+        l_scale = int(self.get_shape_reg2(), 2)
+        r_scale = int(self.get_shape_reg3(), 2)
+        l_zp = int(self.get_shape_reg4(), 2)
+        r_zp = int(self.get_shape_reg5(), 2)
+        # 将有符号32位二进制数转换为正常的十进制数
+        if l_zp > 2 ** 31:
+            l_zp = l_zp - 2 ** 32
+        if r_zp > 2 ** 31:
+            r_zp = r_zp - 2 ** 32
+
+        # 模拟fpga的concat计算
+        l_feature = sim_concat_quant(feature[0], l_zp, l_scale)
+        r_feature = sim_concat_quant(feature[2], r_zp, r_scale)
+        # concat通道层面拼接
+        simulate_result = np.concatenate((l_feature, r_feature), axis=1)
+
+        return simulate_result

@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import torch
 
 from compiler.lib.write_data import gen_coe_add, coe2bin, clear_files, get_feature_count
 from compiler.shape_operator.base_shape import BaseShape
@@ -28,8 +29,6 @@ class Pre(BaseShape):
         scale = np.load(scale)
 
         shift = 2 ** 17
-        if std == 1:
-            scale_new = 1/scale
         scale_new = 1 / (255 * std * scale)
         scale_new = np.round(scale_new * shift).astype(np.uint32)
         scale_new = scale_new.item()
@@ -89,6 +88,11 @@ class Pre(BaseShape):
 
     def write_result_file(self):
         mid_result = self.feature[1]
+        result_shape = mid_result.shape
+
+        parallel = self.shared.parallel
+        # 判断是否需要补通道,补完通道的形状是多少 np.ceil向上取整
+        add_channel = int(parallel * np.ceil(result_shape[1] / parallel))
 
         layer_count = str(self.shared.layer_count)
         file_name = 'auto_result' + layer_count + '.coe'
@@ -98,16 +102,19 @@ class Pre(BaseShape):
 
         # 如果是联测，则直接生成
         if self.shared.generate_mode[0] == 1:
-            gen_coe_add(file_name, mid_result.int_repr(), 1, 1, 1)
+            gen_coe_add(file_name, mid_result.int_repr(), 0, add_channel, parallel)
         # 如果是单测，则只生成一层的中间结果
         elif self.shared.layer_count == self.shared.generate_mode[1]:
-            gen_coe_add(file_name, mid_result.int_repr(), 1, 1, 1)
+            gen_coe_add(file_name, mid_result.int_repr(), 0, add_channel, parallel)
 
         # 如果是首层，则还生成输入bin
         if self.shared.layer_count == 1:
             input_feature = self.feature[0]
+            if type(self.feature[0]) == torch.Tensor:
+                input_feature = self.feature[0].int_repr()
+            channel = self.feature[0].shape[1]
             input_path = file_path + "/auto_input.coe"
             bin_path = file_path + "/auto_input.bin"
-            gen_coe_add(input_path, input_feature, 1, 1, 1)
+            gen_coe_add(input_path, input_feature, 1, channel, channel)
             coe2bin(input_path, bin_path)
 

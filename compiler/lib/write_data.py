@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import torch
+
 from compiler.lib.add_channel import add_weight, add_array
 from compiler.lib.array_format import convert_scale, convert_bias, convert_weight
 
@@ -242,10 +243,10 @@ params:
 '''
 
 
-def write_weight(weight_package):
+def write_weight(weight_package, file_name):
     parallel = weight_package["parallel"]
     out = []
-    with open(weight_package["file_name"], "a+") as fp:  # 写入weight
+    with open(file_name, "a+") as fp:  # 写入weight
         for r in weight_package["weight"]:
             out.append(r)
             if len(out) == parallel:
@@ -342,6 +343,7 @@ def clear_files(folder_path):
                 # 删除文件
                 os.remove(file_path)
 
+
 '''
 get_feature_count:在特征图字典里查找特征图id对应的层数
 params:
@@ -367,9 +369,12 @@ get_weight:计算scale、bias、shift、weight并写入文件
 params:
     para:npy文件路径字典
     parallel:通道并行数
-    file_name:写入文件名
+return:
+    weight_package:权重字典
 '''
-def get_weight(para, parallel, file_name):
+
+
+def get_weight(para, parallel):
     pre_scale = np.load(para['pre_scale'])
     pre_zp = np.load(para['pre_zp'])
     local_weight = np.load(para['local_weight_int'])
@@ -390,11 +395,49 @@ def get_weight(para, parallel, file_name):
     shift = add_array(shift, parallel)
     bias = add_array(bias, parallel)
     weight_package = {
-        "file_name": file_name,
         "weight": weight,
         "bias": bias,
         "scale": scale,
         "shift": shift,
         "parallel": parallel
     }
-    write_weight(weight_package)
+    return weight_package
+
+
+'''
+coe2np:读取coe文件中数据并写入numpy数组
+params:
+    coe_path:coe文件路径
+    feature_shape:numpy数组形状
+'''
+
+
+def coe2np(coe_path, feature_shape):
+    coe_data = []
+    # 打开coe文件
+    with open(coe_path, "r") as file:
+        # 读取文件的所有行
+        lines = file.readlines()
+        # 遍历每一行
+        for line in lines:
+            # 去除每行末尾的换行符
+            line_str = line.strip()
+            # 使用切片将字符串每两个字符分割开来,并转成十进制
+            split_strings = [int(line_str[i:i + 2], 16) for i in range(0, len(line_str), 2)]
+            # 反转字符串数组
+            split_strings = split_strings[::-1]
+            # 使用map()函数将字符串数组中的每个元素转换为整数，并放入一个一维数组中
+            line_data = list(map(int, split_strings))
+            coe_data.extend(line_data)
+    numpy_data = np.zeros(feature_shape, dtype=np.uint8)
+    i = 0
+    for r in range(feature_shape[2]):  # hang
+        for c in range(feature_shape[3]):  # lie
+            for ch in range(feature_shape[1]):  # channel
+                for n in range(feature_shape[0]):  # image_num
+                    numpy_data[n][ch][r][c] = coe_data[i]
+                    i += 1
+
+    return numpy_data
+
+# coe2np("../../sim_data/mid_result/auto_result1.coe", [1, 16, 640, 640])

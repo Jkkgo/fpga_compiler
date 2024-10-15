@@ -1,7 +1,5 @@
-import numpy as np
 
 from compiler.conv_operator.base_conv import BaseConv
-from compiler.lib.add_channel import add_weight
 from compiler.lib.ins_format import conv33para
 
 
