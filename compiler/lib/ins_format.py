@@ -7,7 +7,7 @@ conv33para:计算3*3卷积操作中weight、bias、scale、shift的读取次数
 params:
     out_channel:权重出通道
     in_channel:权重入通道
-    data_size：fpga每次读多少bit数据
+    data_size:fpga每次读多少bit数据
 '''
 
 
@@ -18,9 +18,9 @@ def conv33para(out_channel, in_channel, data_size):
     bias_row_num = int(out_channel * 32 / data_size)
     # *3是因为有 scale + shift + bias
     total_row_num = weight_row_num + bias_row_num * 3
-    # 硬件读取卷积权重总共需要weight_num次（m*c*3*3个权重数字*每个数字8字节/一次读多少字节*9个权重数字）
+    # 硬件读取卷积权重总共需要weight_num次（m*c*3*3个权重数字*每个数字8比特/一次读多少比特*9个权重数字）
     weight_num = int((out_channel * in_channel * 3 * 3 * 8) / (data_size * 9))
-    # 硬件读三个参数的次数 （m个quant*每个quant32字节/一次读多少个字节）
+    # 硬件读三个参数的次数 （m个quant*每个quant32比特/一次读多少个比特）
     quant_num = int(out_channel * 32 / data_size)
     return weight_num, quant_num
 

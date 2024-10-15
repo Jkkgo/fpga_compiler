@@ -37,7 +37,7 @@ def create_files():
         feature_f = model.quant(img)
         # 图片补通道
         feature_q = feature_f.int_repr()
-        feature_addchannel = torch.zeros([1, 16, feature_q.shape[2], feature_q.shape[3]],dtype=torch.int16)
+        feature_addchannel = torch.zeros([1, 16, feature_q.shape[2], feature_q.shape[3]], dtype=torch.int16)
         feature_addchannel[:, :feature_q.shape[1], :, :] = feature_q
         # gen_coe_add("../sim_data/input_add.coe",feature_addchannel,0,8,8)
 
@@ -75,7 +75,6 @@ def create_files():
         # 斜框没有预处理层,第零层不用管
         # 0
         # Transit(para1='', para2='quant', feature=[img, quant_feature_f], option=['Pre'])
-
 
         # ------------------------网络推理-------------------------- #
         # ------------- stem --------------- #
@@ -742,7 +741,8 @@ def create_files():
         # 123
         for_P34_Mul_cat_r = model.conv3_for_downsample1.qf0.cat([for_P34_Mul_qf00_cat_r, for_P34_Mul_qf01_cat_r],
                                                                 dim=1)
-        Transit(para1='conv3_for_downsample1.qf00', para2='conv3_for_downsample1.qf0', para3='conv3_for_downsample1.qf01',
+        Transit(para1='conv3_for_downsample1.qf00', para2='conv3_for_downsample1.qf0',
+                para3='conv3_for_downsample1.qf01',
                 feature=[for_P34_Mul_qf00_cat_r, for_P34_Mul_cat_r, for_P34_Mul_qf01_cat_r],
                 option=['Concat'])
         # 124
@@ -854,8 +854,6 @@ def create_files():
                 feature=[for_P45_Mul_cat_r, for_P45_Mul_cv5_act_r],
                 option=['Conv11', 1, 0, 1])
 
-
-
         # ------------------------Head------------------------------ #
         P3 = for_P43_Mul_cv5_act_r
         P4 = for_P34_Mul_cv5_act_r
@@ -892,9 +890,6 @@ def create_files():
             print('ok')
         else:
             print('error')
-
-
-
 
 
 if __name__ == '__main__':

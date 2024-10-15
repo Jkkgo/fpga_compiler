@@ -95,19 +95,10 @@ def convert_scale(s1, s2, s3):
     # scale = (s1 * s2) / s3
     scale = (s1 * s2) / s3
     shift = np.zeros(scale.shape[0], dtype=np.uint32)
-    scale_temp = np.zeros(scale.shape[0], dtype=np.uint32)
 
+    # 将scale移位到2**31左右
     for i, num in enumerate(scale):
-        while not (0.5 <= num <= 1.0):
-            num *= 2
-        temp = num * (2 ** 32)
-        # 限制temp最高取到2**31防止后续运算操作溢出
-        if temp > 2 ** 27:
-            temp = 2 ** 27
-        scale_temp[i] = temp
-
-    for i, num in enumerate(scale):
-        shift[i] = round(math.log(scale_temp[i] / num, 2)) - 32
+        shift[i] = round(math.log(2**31 / num, 2)) - 32
 
     # 对scale做定点化
     for i, num in enumerate(scale):
@@ -198,3 +189,10 @@ def picture_load(shared):
 # convert_bias(z1, s1, s2, q2, bias)
 
 # convert_scale(s1, s2, s3)
+
+
+
+
+
+
+

@@ -2,7 +2,7 @@ class SharedVariableContainer:
     # 生成模式有两种，
     # [0,层数]：测单层，用于单层仿真,生成单层指令、权重、对比结果
     # [1,层数]：联测,用于侧板子,生成1-本层的连续指令、权重、对比结果
-    generate_mode = [0, 15]
+    generate_mode = [1, 143]
     # 这三个变量需要配合生成模式使用
     gen_ins = False  # 是否需要指令
     gen_weight = False  # 是否需要生成权重

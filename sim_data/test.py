@@ -14,7 +14,7 @@ from compiler.utils.ins_utils import instruction_parsing
 
 # instruction_parsing("./ins.dat")
 
-coe_comparison("./simulate_result/auto_simulate15.coe","./mid_result/auto_result15.coe")
+coe_comparison("./simulate_result/auto_simulate140.coe","./mid_result/auto_result140.coe")
 # coe_comparison("./simulate_result/auto_simulate1.coe","../yolo_obb/fpga_1.coe")
 # coe_comparison("./mid_result/auto_result1.coe","../yolo_obb/fpga_1.coe")
 # coe_comparison("./simulate_result/auto_simulate3.coe", "../compiler/3.coe")

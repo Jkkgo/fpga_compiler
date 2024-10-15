@@ -134,16 +134,15 @@ return:
     quant_result:移位运算仿真结果
 具体计算过程: (((quant_result<<16)+(bias<<(16-bias_shift)))*scale)>>(scale_shift+1+32+16)
 '''
-
-
 def sim_conv_quant(conv_result, bias, bias_shift, scale, scale_shift, local_zp):
-    quant_result = conv_result.numpy().astype(np.int64)
+    quant_result = conv_result.detach().numpy().astype(np.float64)
     for ch in range(conv_result.shape[1]):
-        quant_result[0][ch] <<= 16
+        quant_result[0][ch] *= 2**16
         quant_result[0][ch] += bias[ch] << (16 - bias_shift[ch])
         quant_result[0][ch] *= scale[ch]
         # 少移1位是为了对最后一位做四舍五入
-        quant_result[0][ch] >>= (scale_shift[ch] + 32 + 16)
+        quant_result[0][ch] /= 2**(scale_shift[ch] + 32 + 16)
+    quant_result = np.floor(quant_result).astype(np.int64)
     # 使用向量化操作将函数应用到数组的每个元素
     # 对低位做四舍五入
     quant_result = np.vectorize(sim_round)(quant_result)
@@ -183,7 +182,7 @@ def sim_conv(feature, weight, option, pre_zp):
                      constant_values=pre_zp)
 
     # 定义卷积操作模块
-    conv = nn.Conv2d(c_in, c_out, kernel_size=kernel_size, stride=stride, bias=False)
+    conv = nn.Conv2d(c_in, c_out, kernel_size=weight.shape[3], stride=stride, bias=False)
     weight = torch.tensor(weight, dtype=torch.float32)
     feature = torch.tensor(feature, dtype=torch.float32)
     conv.weight = nn.Parameter(weight)
