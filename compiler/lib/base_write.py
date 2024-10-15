@@ -159,6 +159,8 @@ class BaseWrite:
         layer_count = self.shared.layer_count
         coe_name = 'auto_simulate' + str(layer_count) + '.coe'
         file_name = "{}/{}".format(file_path, coe_name)
+        file_path = self.shared.file_path + 'simulate_result'
+        os.makedirs(file_path, exist_ok=True)
         parallel = self.shared.parallel
         feature = self.feature
         feature_id_l = id(feature[0])
